@@ -443,6 +443,10 @@ input[type="range"] {
   padding: 5px 10px;
   font-size: 0.82rem;
 }
+.top-actions .btn { white-space: nowrap; }
+
+/* Elements marked `hidden` must stay hidden even when a class gives them display:flex/grid */
+[hidden] { display: none !important; }
 
 /* Modal */
 .modal {
@@ -726,6 +730,7 @@ input[type="range"] {
       
       <button class="btn primary" id="render" type="button">🖼️ Render print</button>
     </section>
+  </aside>
 </main>
 
 <footer style="max-width:1440px;margin:28px auto 0;text-align:center;padding:18px 0;border-top:1px solid var(--line);font-size:0.88rem;color:var(--muted);">
@@ -2221,27 +2226,29 @@ function setSystem(key, saved) {
 }
 
 function applyCustomModel() {
+  const config = {
+    name: $('cName').value.trim() || 'Custom Model',
+    eqX: $('cEqX').value.trim(),
+    eqY: $('cEqY').value.trim(),
+    eqZ: $('cEqZ').value.trim(),
+    constStr: $('cConst').value.trim(),
+    x0Str: $('cX0').value.trim(),
+    dtStr: $('cDt').value.trim()
+  };
+  // Compile here first: resolve('custom') silently falls back to the default model on errors,
+  // so without this check a typing mistake would never be reported.
   try {
-    state.customConfig = {
-      name: $('cName').value.trim() || 'Custom Model',
-      eqX: $('cEqX').value.trim(),
-      eqY: $('cEqY').value.trim(),
-      eqZ: $('cEqZ').value.trim(),
-      constStr: $('cConst').value.trim(),
-      x0Str: $('cX0').value.trim(),
-      dtStr: $('cDt').value.trim()
-    };
-    cur = resolve('custom');
-    buildParams();
-    updateEq();
-    syncAll();
-    setWarn('Custom model compiled successfully!', true);
-    setTimeout(() => { if ($('warn').classList.contains('success')) setWarn(''); }, 3000);
-    recompute();
-    save();
+    compileCustomModel(config);
   } catch (err) {
     setWarn(err.message, false);
+    return;
   }
+  state.customConfig = config;
+  // setSystem rebuilds state.p from the new constants (otherwise captions/recipes show NaN)
+  setSystem('custom', null);
+  setWarn('Custom model compiled successfully!', true);
+  setTimeout(() => { if ($('warn').classList.contains('success')) setWarn(''); }, 3000);
+  save();
 }
 
 /* Map shuffler: keep only constants whose orbit fills > 20% of area */

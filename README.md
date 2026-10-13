@@ -4,7 +4,7 @@
 
 Phase Space Prints is a standalone, self-contained single-page web app built with vanilla HTML5, modern CSS, and JavaScript. It runs entirely in the browser on `<canvas>` using a CPU density buffer with bilinear splatting, custom logarithmic tone mapping, and a hand-written mathematical expression compiler (strictly zero `eval` or `new Function`).
 
-🔗 **Live Web App:** Open `index.html` in any modern web browser or serve via `python3 -m http.server 8091`.  
+🔗 **Live Web App:** [https://mdsamhussain1996.github.io/phase-space-prints/](https://mdsamhussain1996.github.io/phase-space-prints/) (or open `index.html` locally / serve via `python3 -m http.server 8091`).  
 📦 **Repository:** [https://github.com/mdsamhussain1996/phase-space-prints](https://github.com/mdsamhussain1996/phase-space-prints)  
 👨‍🏫 **Author:** [Dr. Md Samshad Hussain Ansari](https://mdsamhussain1996.github.io/) (Assistant Professor of Mathematics, ADYPU, Pune)
 

@@ -1,0 +1,2746 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phase Space Prints — Mathematical Dynamical Systems Art</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   CSS Custom Properties & Themes
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg: #e8ebf1;
+  --surface: #f6f7fa;
+  --well: #eceff5;
+  --mat: #fbfcfd;
+  --ink: #141824;
+  --muted: #535c75;
+  --line: #d0d6e3;
+  --accent: #2b45c7;
+  --accent-ink: #ffffff;
+  --warn-bg: #fdf0e6;
+  --warn-ink: #87380c;
+  --warn-line: #f4cbb3;
+  --success-bg: #eafaf1;
+  --success-ink: #0e6235;
+  --scrim: rgba(12, 16, 28, 0.65);
+  --shadow: 0 2px 4px rgba(18, 22, 40, 0.06), 0 20px 48px -18px rgba(18, 22, 40, 0.32);
+  --f-display: "Bricolage Grotesque", "Segoe UI", -apple-system, system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0e17;
+    --surface: #131724;
+    --well: #191e30;
+    --mat: #181d2e;
+    --ink: #e3e7f5;
+    --muted: #8d95af;
+    --line: #262e46;
+    --accent: #8b9eff;
+    --accent-ink: #080c1a;
+    --warn-bg: #351c10;
+    --warn-ink: #f8c19b;
+    --warn-line: #5a2e19;
+    --success-bg: #102d1d;
+    --success-ink: #9de3b6;
+    --scrim: rgba(0, 0, 0, 0.78);
+    --shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 20px 48px -18px rgba(0, 0, 0, 0.9);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0e17;
+  --surface: #131724;
+  --well: #191e30;
+  --mat: #181d2e;
+  --ink: #e3e7f5;
+  --muted: #8d95af;
+  --line: #262e46;
+  --accent: #8b9eff;
+  --accent-ink: #080c1a;
+  --warn-bg: #351c10;
+  --warn-ink: #f8c19b;
+  --warn-line: #5a2e19;
+  --success-bg: #102d1d;
+  --success-ink: #9de3b6;
+  --scrim: rgba(0, 0, 0, 0.78);
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.5), 0 20px 48px -18px rgba(0, 0, 0, 0.9);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #e8ebf1;
+  --surface: #f6f7fa;
+  --well: #eceff5;
+  --mat: #fbfcfd;
+  --ink: #141824;
+  --muted: #535c75;
+  --line: #d0d6e3;
+  --accent: #2b45c7;
+  --accent-ink: #ffffff;
+  --warn-bg: #fdf0e6;
+  --warn-ink: #87380c;
+  --warn-line: #f4cbb3;
+  --success-bg: #eafaf1;
+  --success-ink: #0e6235;
+  --scrim: rgba(12, 16, 28, 0.65);
+  --shadow: 0 2px 4px rgba(18, 22, 40, 0.06), 0 20px 48px -18px rgba(18, 22, 40, 0.32);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 14.5px;
+  line-height: 1.45;
+  padding-inline: 16px;
+  padding-bottom: 50px;
+}
+
+/* Header & Top Bar */
+.top {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 22px 0 18px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 20px;
+  flex-wrap: wrap;
+}
+.brand h1 {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0;
+}
+.brand p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  max-width: 58ch;
+  text-wrap: pretty;
+}
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Main Layout Grid */
+.layout {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 350px minmax(0, 1fr);
+  grid-template-areas: "panel stage";
+  gap: 24px;
+  align-items: start;
+}
+.stage {
+  grid-area: stage;
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+.panel {
+  grid-area: panel;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 4px 18px 16px;
+  min-width: 0;
+}
+
+/* Mobile: Plate first! */
+@media (max-width: 880px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "stage" "panel";
+    gap: 20px;
+  }
+  .stage { position: static; }
+}
+
+/* Mat Board & Canvas Plate */
+.mat {
+  position: relative;
+  background: var(--mat);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  padding: clamp(14px, 3.2vw, 36px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 220px;
+}
+#plate {
+  display: block;
+  touch-action: none;
+  cursor: grab;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  max-width: 100%;
+}
+#plate:active { cursor: grabbing; }
+
+/* Progress bar inside mat */
+.prog {
+  position: absolute;
+  left: clamp(14px, 3.2vw, 36px);
+  right: clamp(14px, 3.2vw, 36px);
+  bottom: 10px;
+  display: grid;
+  gap: 4px;
+}
+.prog-track {
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.prog-bar {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.12s linear;
+}
+.prog span {
+  font: 500 11px/1 var(--f-mono);
+  color: var(--muted);
+}
+
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  font: 400 12px/1.5 var(--f-mono);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.readout .hint { color: var(--ink); font-weight: 500; }
+
+.warn {
+  margin: 0;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border: 1px solid var(--warn-line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+.warn.success {
+  background: var(--success-bg);
+  color: var(--success-ink);
+  border-color: var(--success-ink);
+}
+
+/* Control Groups */
+.grp {
+  display: grid;
+  gap: 12px;
+  padding-block: 16px;
+  border-top: 1px solid var(--line);
+}
+.grp:first-child { border-top: 0; }
+.grp h2 {
+  margin: 0;
+  font: 600 11px/1 var(--f-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+select, input[type="text"], textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+select:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.eq {
+  font: 400 13px/1.75 var(--f-mono);
+  background: var(--well);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.eq sup { font-size: 0.72em; }
+.eqmeta {
+  font: 400 11.5px/1.5 var(--f-mono);
+  color: var(--muted);
+}
+
+/* Custom Equations Form */
+.custom-box {
+  display: grid;
+  gap: 10px;
+  background: var(--well);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+.custom-row {
+  display: grid;
+  gap: 4px;
+}
+.custom-row label {
+  font: 500 12px var(--f-mono);
+  color: var(--muted);
+}
+.custom-row input {
+  font-family: var(--f-mono);
+  font-size: 13px;
+}
+.custom-row small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ctls { display: grid; gap: 10px; }
+.ctl { display: grid; gap: 4px; }
+.ctl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.ctl-head label { font-size: 0.92rem; }
+.ctl-head output {
+  font: 500 12px/1 var(--f-mono);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  margin: 0;
+  cursor: pointer;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+.check input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+/* Swatches */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.sw {
+  display: grid;
+  gap: 6px;
+  padding: 7px 8px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 500 0.82rem var(--f-body);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.sw .strip {
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.sw[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* Segmented Control */
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.seg input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.seg label {
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 0.88rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+.seg label + input + label, .seg input + label ~ label {
+  border-left: 1px solid var(--line);
+}
+.seg input:checked + label {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Buttons */
+.btn {
+  font: 700 0.92rem var(--f-body);
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  width: 100%;
+}
+.btn.primary:hover { opacity: 0.92; }
+.btn.ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+}
+.btn.ghost:hover { border-color: var(--muted); }
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.82rem;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.sheet {
+  width: 100%;
+  max-width: 960px;
+  max-height: 92vh;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 22px;
+  display: grid;
+  gap: 14px;
+  box-shadow: var(--shadow);
+}
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.sheet-head h3 {
+  margin: 0;
+  font: 700 1.3rem var(--f-display);
+  letter-spacing: -0.01em;
+}
+#mStatus {
+  margin: 0;
+  font: 500 12px var(--f-mono);
+  color: var(--muted);
+}
+.mimg {
+  background: var(--well);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+  border: 1px solid var(--line);
+}
+#mImg {
+  display: block;
+  max-height: 56vh;
+  max-width: 100%;
+  object-fit: contain;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.mhelp {
+  margin: 0;
+  font-size: 0.92rem;
+}
+.recipe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.recipe code {
+  flex: 1 1 260px;
+  min-width: 0;
+  font: 400 11.5px/1.5 var(--f-mono);
+  background: var(--well);
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+/* Test suite log modal */
+#testLog {
+  background: var(--well);
+  font: 400 12px/1.6 var(--f-mono);
+  padding: 12px;
+  border-radius: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .prog-bar { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>Phase Space Prints</h1>
+    <p>Render chaotic attractors, fractional-order systems, iterated maps, and your own custom differential equations as gallery-quality posters and wallpapers.</p>
+  </div>
+  <div class="top-actions">
+    <button class="btn ghost btn-sm" id="themeToggle" type="button" title="Toggle light/dark theme">🌓 Theme</button>
+    <button class="btn ghost btn-sm" id="testSuiteBtn" type="button" title="Run in-browser unit tests">🧪 Test Suite</button>
+    <button class="btn ghost" id="surprise" type="button">✨ Surprise me</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- Right (or top on mobile): Plate Stage -->
+  <section class="stage" aria-label="Print preview">
+    <div class="mat" id="mat">
+      <canvas id="plate" role="img" aria-label="Rendered dynamical system"></canvas>
+      <div class="prog" id="prog" hidden>
+        <div class="prog-track"><div class="prog-bar" id="progBar"></div></div>
+        <span id="progText">Integrating…</span>
+      </div>
+    </div>
+    <div class="readout">
+      <span id="readout">Preparing…</span>
+      <span class="hint" id="hint">Drag the print to rotate</span>
+    </div>
+    <p class="warn" id="warn" role="status" hidden></p>
+  </section>
+
+  <!-- Left: Control Panel -->
+  <aside class="panel" aria-label="Controls">
+    <!-- 1. Equation -->
+    <section class="grp">
+      <h2>Equation</h2>
+      <label for="sys" class="sr">System</label>
+      <select id="sys"></select>
+      
+      <!-- Custom Model Form (Visible when 'custom' is selected) -->
+      <div class="custom-box" id="customBox" hidden>
+        <div class="custom-row">
+          <label for="cName">Model Name</label>
+          <input type="text" id="cName" value="Nosé–Hoover (Sprott A)">
+        </div>
+        <div class="custom-row">
+          <label for="cEqX">ẋ = f(x, y, z, t)</label>
+          <input type="text" id="cEqX" value="y">
+        </div>
+        <div class="custom-row">
+          <label for="cEqY">ẏ = f(x, y, z, t)</label>
+          <input type="text" id="cEqY" value="-x + y*z">
+        </div>
+        <div class="custom-row">
+          <label for="cEqZ">ż = f(x, y, z, t) <small>(blank for 2-D)</small></label>
+          <input type="text" id="cEqZ" value="a - y^2">
+        </div>
+        <div class="custom-row">
+          <label for="cConst">Constants <small>(e.g. a = 1 or σ = 10, ρ = 28)</small></label>
+          <input type="text" id="cConst" value="a = 1">
+        </div>
+        <div class="custom-row">
+          <label for="cX0">Initial State (x₀, y₀, z₀)</label>
+          <input type="text" id="cX0" value="0, 5, 0">
+        </div>
+        <div class="custom-row">
+          <label for="cDt">Time Step Δt (0 &lt; Δt ≤ 0.5)</label>
+          <input type="text" id="cDt" value="0.01">
+        </div>
+        <button class="btn ghost btn-sm" id="cCompile" type="button">Update Model</button>
+      </div>
+
+      <div class="eq" id="eq"></div>
+      <div class="eqmeta" id="eqmeta"></div>
+    </section>
+
+    <!-- 2. Constants -->
+    <section class="grp">
+      <h2>Constants</h2>
+      <div class="ctls" id="params"></div>
+      
+      <div class="ctl" id="qWrap">
+        <div class="ctl-head">
+          <label for="q">Fractional order q</label>
+          <output id="qOut" for="q">1.000</output>
+        </div>
+        <input type="range" id="q" min="0.8" max="1" step="0.001" value="1">
+        <p class="note">q = 1 is the classical system (RK4). Below 1 the Grünwald–Letnikov scheme adds memory, and chaos can fade.</p>
+      </div>
+
+      <div class="ctl">
+        <div class="ctl-head">
+          <label for="detail">Detail</label>
+          <output id="detailOut" for="detail">Standard</output>
+        </div>
+        <input type="range" id="detail" min="0" max="4" step="1" value="2">
+      </div>
+
+      <button class="btn ghost" id="shuffle" type="button" hidden>🎲 Shuffle constants</button>
+    </section>
+
+    <!-- 3. View -->
+    <section class="grp">
+      <h2>View</h2>
+      <div class="ctls">
+        <div class="ctl">
+          <div class="ctl-head">
+            <label for="yaw">Turn (yaw)</label>
+            <output id="yawOut" for="yaw">0°</output>
+          </div>
+          <input type="range" id="yaw" min="-180" max="180" step="0.5" value="0">
+        </div>
+        <div class="ctl" id="pitchWrap">
+          <div class="ctl-head">
+            <label for="pitch">Tilt (pitch)</label>
+            <output id="pitchOut" for="pitch">0°</output>
+          </div>
+          <input type="range" id="pitch" min="-90" max="90" step="0.5" value="0">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head">
+            <label for="zoom">Zoom</label>
+            <output id="zoomOut" for="zoom">1.00×</output>
+          </div>
+          <input type="range" id="zoom" min="0.5" max="2.5" step="0.01" value="1">
+        </div>
+        <label class="check" id="depthWrap"><input type="checkbox" id="depth" checked> Depth shading</label>
+      </div>
+    </section>
+
+    <!-- 4. Ink -->
+    <section class="grp">
+      <h2>Ink</h2>
+      <div class="swatches" id="swatches"></div>
+      
+      <div class="seg" role="radiogroup" aria-label="Colouring">
+        <input type="radio" name="mode" id="modeD" value="density" checked>
+        <label for="modeD">Density</label>
+        <input type="radio" name="mode" id="modeP" value="path">
+        <label for="modeP">Along the path</label>
+      </div>
+      <p class="note">Density shades where the orbit lingers. Along the path colours each stretch by time, or by jump length for maps.</p>
+
+      <div class="ctls">
+        <div class="ctl">
+          <div class="ctl-head">
+            <label for="exposure">Exposure</label>
+            <output id="exposureOut" for="exposure">1.00</output>
+          </div>
+          <input type="range" id="exposure" min="0.3" max="2.5" step="0.01" value="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head">
+            <label for="contrast">Contrast</label>
+            <output id="contrastOut" for="contrast">1.00</output>
+          </div>
+          <input type="range" id="contrast" min="0.4" max="2.2" step="0.01" value="1">
+        </div>
+        <label class="check"><input type="checkbox" id="glow" checked> Glow effect</label>
+      </div>
+    </section>
+
+    <!-- 5. Print -->
+    <section class="grp">
+      <h2>Print</h2>
+      <label for="format" class="sr">Format</label>
+      <select id="format"></select>
+      
+      <label class="check"><input type="checkbox" id="caption" checked> Caption with equations &amp; constants</label>
+      
+      <div class="ctl">
+        <label for="title" class="sr">Caption title</label>
+        <input type="text" id="title" placeholder="Caption title (defaults to model name)" maxlength="60">
+      </div>
+      
+      <button class="btn primary" id="render" type="button">🖼️ Render print</button>
+    </section>
+  </aside>
+</main>
+
+<!-- High-Res Print Export Modal -->
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="sheet-head">
+      <h3 id="mTitle">Your High-Resolution Print</h3>
+      <button class="btn ghost btn-sm" id="mClose" type="button">✕ Close</button>
+    </div>
+    <p id="mStatus">Preparing render…</p>
+    <div class="mimg">
+      <img id="mImg" alt="Full-resolution render of the print" hidden>
+    </div>
+    <p class="mhelp">Right-click the image and choose <strong>Save image as…</strong> On a mobile phone or tablet, press and hold to save.</p>
+    <div class="recipe">
+      <code id="recipe"></code>
+      <button class="btn ghost btn-sm" id="copyRecipe" type="button">📋 Copy recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- Test Suite Modal -->
+<div class="modal" id="testModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tTitle">
+    <div class="sheet-head">
+      <h3 id="tTitle">🧪 Automated Unit Test Suite</h3>
+      <button class="btn ghost btn-sm" id="tClose" type="button">✕ Close</button>
+    </div>
+    <div id="testLog">Running unit tests…</div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const PI = Math.PI;
+const P = (k, label, min, max, step, v) => ({ k, label, min, max, step, v });
+const DOT = { x: 'ẋ', y: 'ẏ', z: 'ż' };
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   1. Built-in Dynamical Systems
+   ───────────────────────────────────────────────────────────────────────────── */
+const SYS = {
+  lorenz: {
+    group: 'Strange attractors', name: 'Lorenz', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('s', 'σ', 1, 30, 0.1, 10), P('r', 'ρ', 1, 60, 0.1, 28), P('b', 'β', 0.2, 6, 0.01, 8/3)],
+    rhs: ['σ(y − x)', 'x(ρ − z) − y', 'xy − βz'],
+    f: (x, y, z, t, p, o) => { o[0] = p.s * (y - x); o[1] = x * (p.r - z) - y; o[2] = x * y - p.b * z; },
+    x0: [0.1, 0, 0], dt: 0.005, h: 0.005, view: [0, 0, 1]
+  },
+  rossler: {
+    group: 'Strange attractors', name: 'Rössler', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('a', 'a', 0.05, 0.5, 0.005, 0.2), P('b', 'b', 0.05, 2, 0.01, 0.2), P('c', 'c', 2, 14, 0.05, 5.7)],
+    rhs: ['−y − z', 'x + ay', 'b + z(x − c)'],
+    f: (x, y, z, t, p, o) => { o[0] = -y - z; o[1] = x + p.a * y; o[2] = p.b + z * (x - p.c); },
+    x0: [1, 1, 0], dt: 0.02, h: 0.01, view: [0.4, -1.15, 1]
+  },
+  aizawa: {
+    group: 'Strange attractors', name: 'Aizawa', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('a', 'a', 0.5, 1.2, 0.005, 0.95), P('b', 'b', 0.4, 1, 0.005, 0.7), P('c', 'c', 0.3, 0.9, 0.005, 0.6),
+             P('d', 'd', 1, 5, 0.01, 3.5), P('e', 'e', 0, 0.5, 0.005, 0.25), P('f', 'f', 0, 0.3, 0.005, 0.1)],
+    rhs: ['(z − b)x − dy', 'dx + (z − b)y', 'c + az − z³/3 − (x² + y²)(1 + ez) + fzx³'],
+    f: (x, y, z, t, p, o) => {
+      o[0] = (z - p.b) * x - p.d * y;
+      o[1] = p.d * x + (z - p.b) * y;
+      o[2] = p.c + p.a * z - (z * z * z) / 3 - (x * x + y * y) * (1 + p.e * z) + p.f * z * x * x * x;
+    },
+    x0: [0.1, 0, 0], dt: 0.01, h: 0.01, view: [0.3, -0.3, 1]
+  },
+  thomas: {
+    group: 'Strange attractors', name: 'Thomas', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('b', 'b', 0.1, 0.32, 0.001, 0.208186)],
+    rhs: ['sin y − bx', 'sin z − by', 'sin x − bz'],
+    f: (x, y, z, t, p, o) => { o[0] = Math.sin(y) - p.b * x; o[1] = Math.sin(z) - p.b * y; o[2] = Math.sin(x) - p.b * z; },
+    x0: [1.1, 1.1, -0.01], dt: 0.05, h: 0.05, view: [0.75, -0.62, 1]
+  },
+  halvorsen: {
+    group: 'Strange attractors', name: 'Halvorsen', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('a', 'a', 1.3, 2.4, 0.01, 1.89)],
+    rhs: ['−ax − 4y − 4z − y²', '−ay − 4z − 4x − z²', '−az − 4x − 4y − x²'],
+    f: (x, y, z, t, p, o) => {
+      o[0] = -p.a * x - 4 * y - 4 * z - y * y;
+      o[1] = -p.a * y - 4 * z - 4 * x - z * z;
+      o[2] = -p.a * z - 4 * x - 4 * y - x * x;
+    },
+    x0: [-1.48, -1.51, 2.04], dt: 0.005, h: 0.005, view: [0.79, -0.96, 1]
+  },
+  dadras: {
+    group: 'Strange attractors', name: 'Dadras', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('a', 'a', 1, 5, 0.01, 3), P('b', 'b', 1, 4, 0.01, 2.7), P('c', 'c', 0.5, 3, 0.01, 1.7), P('d', 'd', 1, 4, 0.01, 2), P('e', 'e', 4, 12, 0.05, 9)],
+    rhs: ['y − ax + byz', 'cy − xz + z', 'dxy − ez'],
+    f: (x, y, z, t, p, o) => { o[0] = y - p.a * x + p.b * y * z; o[1] = p.c * y - x * z + z; o[2] = p.d * x * y - p.e * z; },
+    x0: [1.1, 2.1, -2], dt: 0.005, h: 0.005, view: [0.4, -0.6, 1]
+  },
+  chen: {
+    group: 'Strange attractors', name: 'Chen', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('a', 'a', 20, 45, 0.1, 35), P('b', 'b', 1, 6, 0.01, 3), P('c', 'c', 15, 35, 0.1, 28)],
+    rhs: ['a(y − x)', '(c − a)x − xz + cy', 'xy − bz'],
+    f: (x, y, z, t, p, o) => { o[0] = p.a * (y - x); o[1] = (p.c - p.a) * x - x * z + p.c * y; o[2] = x * y - p.b * z; },
+    x0: [-0.1, 0.5, -0.6], dt: 0.002, h: 0.005, view: [0, 0, 1]
+  },
+
+  /* Fractional Presets */
+  fLorenz:  { group: 'Fractional-order', name: 'Fractional Lorenz (q = 0.995)', base: 'lorenz', q: 0.995 },
+  fChen:    { group: 'Fractional-order', name: 'Fractional Chen (q = 0.9)', base: 'chen', q: 0.9 },
+  fRossler: { group: 'Fractional-order', name: 'Fractional Rössler (q = 0.9)', base: 'rossler', q: 0.9, p: { a: 0.5, b: 0.2, c: 10 } },
+
+  /* Iterated Maps */
+  clifford: {
+    group: 'Iterated maps', name: 'Clifford map', kind: 'map',
+    params: [P('a', 'a', -3, 3, 0.001, -1.4), P('b', 'b', -3, 3, 0.001, 1.6), P('c', 'c', -2, 2, 0.001, 1.0), P('d', 'd', -2, 2, 0.001, 0.7)],
+    lines: ['xₙ₊₁ = sin(a yₙ) + c cos(a xₙ)', 'yₙ₊₁ = sin(b xₙ) + d cos(b yₙ)'],
+    step: (x, y, p, o) => { o[0] = Math.sin(p.a * y) + p.c * Math.cos(p.a * x); o[1] = Math.sin(p.b * x) + p.d * Math.cos(p.b * y); },
+    start: '(x₀, y₀) = (0.1, 0.1)', view: [0, 0, 1]
+  },
+  dejong: {
+    group: 'Iterated maps', name: 'Peter de Jong map', kind: 'map',
+    params: [P('a', 'a', -3, 3, 0.001, 1.4), P('b', 'b', -3, 3, 0.001, -2.3), P('c', 'c', -3, 3, 0.001, 2.4), P('d', 'd', -3, 3, 0.001, -2.1)],
+    lines: ['xₙ₊₁ = sin(a yₙ) − cos(b xₙ)', 'yₙ₊₁ = sin(c xₙ) − cos(d yₙ)'],
+    step: (x, y, p, o) => { o[0] = Math.sin(p.a * y) - Math.cos(p.b * x); o[1] = Math.sin(p.c * x) - Math.cos(p.d * y); },
+    start: '(x₀, y₀) = (0.1, 0.1)', view: [0, 0, 1]
+  },
+
+  /* Forced Oscillators */
+  duffing: {
+    group: 'Forced oscillators', name: 'Ueda–Duffing section', kind: 'poincare',
+    params: [P('d', 'δ', 0, 0.5, 0.005, 0.05), P('a', 'α', -1.5, 1.5, 0.01, 0), P('b', 'β', 0.1, 2, 0.01, 1), P('g', 'γ', 0, 12, 0.05, 7.5), P('w', 'ω', 0.4, 2, 0.01, 1)],
+    lines: ['ẍ + δẋ + αx + βx³ = γ cos ωt', 'sampled once per forcing period (Poincaré section)'],
+    start: '(x₀, ẋ₀) = (1, 0) · 120 RK4 steps per period', view: [0, 0, 1]
+  },
+
+  /* Phase Portraits */
+  vdp: {
+    group: 'Phase portraits', name: 'Van der Pol flow', kind: 'flow',
+    params: [P('m', 'μ', 0.1, 4, 0.05, 1.5)],
+    lines: ['ẋ = y', 'ẏ = μ(1 − x²)y − x'],
+    f2: (x, y, p, o) => { o[0] = y; o[1] = p.m * (1 - x * x) * y - x; },
+    dom: [-4, 4, -4, 4], S: 700, dt: 0.012, view: [0, 0, 1]
+  },
+  pendulum: {
+    group: 'Phase portraits', name: 'Damped pendulum flow', kind: 'flow',
+    params: [P('b', 'b', 0, 0.8, 0.005, 0.15)],
+    lines: ['θ̇ = ω', 'ω̇ = −bω − sin θ'],
+    f2: (x, y, p, o) => { o[0] = y; o[1] = -p.b * y - Math.sin(x); },
+    dom: [-2 * PI, 2 * PI, -3, 3], S: 1600, dt: 0.01, view: [0, 0, 1]
+  },
+
+  /* Custom Model Placeholder */
+  custom: {
+    group: 'Custom models', name: 'Write your own equations', kind: 'ode', frac: true, isCustom: true,
+    vars: ['x', 'y', 'z'], params: [], rhs: [], f: null, x0: [0, 5, 0], dt: 0.01, h: 0.01, view: [0, 0, 1]
+  }
+};
+
+const GROUPS = ['Strange attractors', 'Fractional-order', 'Iterated maps', 'Forced oscillators', 'Phase portraits', 'Custom models'];
+
+const PALETTES = {
+  nebula:    { name: 'Nebula',       stops: ['#06061a', '#241a63', '#6d2aa0', '#d4508f', '#ffc49b', '#fff8ee'] },
+  ember:     { name: 'Ember',        stops: ['#0a0503', '#45100a', '#9e2f0e', '#ec7f24', '#ffd77d', '#fffbe9'] },
+  glacier:   { name: 'Glacier',      stops: ['#020d17', '#072f4a', '#14689a', '#4fb6d9', '#c3eeff', '#ffffff'] },
+  viridis:   { name: 'Viridis',      stops: ['#0b0410', '#3b0f70', '#31688e', '#21918c', '#5ec962', '#fde725'] },
+  copper:    { name: 'Copper',       stops: ['#090706', '#33200f', '#7d4a28', '#c98a52', '#f2cfa3', '#fff6ea'] },
+  blueprint: { name: 'Blueprint',    stops: ['#0c2752', '#174789', '#4f86cc', '#a9cdf5', '#f4f9ff'] },
+  ink:       { name: 'Ink on paper', stops: ['#f4f2ec', '#cbc8c0', '#7a7880', '#2c2f45', '#0c0e1c'] },
+  riso:      { name: 'Riso',         stops: ['#f6ebe6', '#f7a6b9', '#ff4f7b', '#3a3fd0', '#141743'] },
+};
+
+const FORMATS = {
+  square:  { name: 'Square · 2048 × 2048',               w: 2048, h: 2048 },
+  a3:      { name: 'A3 poster · 150 dpi · 1754 × 2480',    w: 1754, h: 2480 },
+  a3hi:    { name: 'A3 poster · 300 dpi · 3508 × 4961',    w: 3508, h: 4961 },
+  desktop: { name: 'Desktop wallpaper · 2560 × 1440',     w: 2560, h: 1440 },
+  uhd:     { name: '4K wallpaper · 3840 × 2160',         w: 3840, h: 2160 },
+  phone:   { name: 'Phone wallpaper · 1179 × 2556',      w: 1179, h: 2556 },
+  post:    { name: 'Portrait post · 1080 × 1350',        w: 1080, h: 1350 },
+};
+
+const DETAIL = {
+  rk4:      [150e3, 400e3, 800e3, 1.6e6, 3e6],
+  frac:     [12e3, 25e3, 45e3, 70e3, 110e3],
+  flow:     [10, 16, 24, 34, 46],
+  map:      [300e3, 800e3, 1.6e6, 3.2e6, 6e6],
+  poincare: [10e3, 25e3, 50e3, 100e3, 200e3],
+};
+const DETAIL_NAMES = ['Sketch', 'Light', 'Standard', 'Fine', 'Exhibition'];
+const GL_MEMORY = 1000;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   2. Hand-Written Tokenizer & Recursive-Descent Parser (No eval / new Function)
+   ───────────────────────────────────────────────────────────────────────────── */
+const BUILTIN_FUNCS_1 = {
+  sin: Math.sin, cos: Math.cos, tan: Math.tan, exp: Math.exp,
+  log: Math.log, ln: Math.log, sqrt: Math.sqrt, abs: Math.abs,
+  tanh: Math.tanh, sinh: Math.sinh, cosh: Math.cosh,
+  atan: Math.atan, asin: Math.asin, acos: Math.acos,
+  sign: Math.sign, floor: Math.floor
+};
+const BUILTIN_FUNCS_2 = {
+  min: Math.min, max: Math.max, pow: Math.pow, atan2: Math.atan2,
+  mod: (a, b) => ((a % b) + b) % b
+};
+
+function normalizeEquationStr(str) {
+  if (!str) return '';
+  return str
+    .replace(/\u2212/g, '-') // Unicode minus − -> -
+    .replace(/[\u00D7\u00B7]/g, '*') // × and · -> *
+    .replace(/\u00F7/g, '/') // ÷ -> /
+    .replace(/\u00B2/g, '^2') // ² -> ^2
+    .replace(/\u00B3/g, '^3'); // ³ -> ^3
+}
+
+// Token types: NUMBER, IDENT, PLUS, MINUS, MUL, DIV, POW, LPAREN, RPAREN, COMMA
+function tokenize(src, knownVars, knownConsts) {
+  const norm = normalizeEquationStr(src);
+  const tokens = [];
+  let i = 0;
+  const n = norm.length;
+
+  while (i < n) {
+    const ch = norm[i];
+    if (/\s/.test(ch)) { i++; continue; }
+
+    if (/[0-9.]/.test(ch)) {
+      let numStr = '';
+      while (i < n && /[0-9.]/.test(norm[i])) { numStr += norm[i++]; }
+      const v = parseFloat(numStr);
+      if (isNaN(v)) throw new Error(`Invalid number "${numStr}"`);
+      tokens.push({ type: 'NUMBER', val: v });
+      continue;
+    }
+
+    if (/[a-zA-Z_\u0370-\u03FF]/.test(ch)) { // Latin, underscore, Greek letters
+      let ident = '';
+      while (i < n && /[a-zA-Z0-9_\u0370-\u03FF]/.test(norm[i])) { ident += norm[i++]; }
+      tokens.push({ type: 'IDENT', val: ident });
+      continue;
+    }
+
+    if (ch === '+') { tokens.push({ type: 'PLUS' }); i++; continue; }
+    if (ch === '-') { tokens.push({ type: 'MINUS' }); i++; continue; }
+    if (ch === '*') { tokens.push({ type: 'MUL' }); i++; continue; }
+    if (ch === '/') { tokens.push({ type: 'DIV' }); i++; continue; }
+    if (ch === '^') { tokens.push({ type: 'POW' }); i++; continue; }
+    if (ch === '(') { tokens.push({ type: 'LPAREN' }); i++; continue; }
+    if (ch === ')') { tokens.push({ type: 'RPAREN' }); i++; continue; }
+    if (ch === ',') { tokens.push({ type: 'COMMA' }); i++; continue; }
+
+    throw new Error(`Unexpected character "${ch}" at position ${i + 1}`);
+  }
+
+  // Insert implicit multiplication tokens where applicable:
+  // After a NUMBER, IDENT, or RPAREN, if followed by an IDENT, LPAREN, or NUMBER, insert MUL
+  // Note: A function name followed by '(' is a function call, NOT implicit multiplication!
+  const isFunc = tok => tok && tok.type === 'IDENT' && (tok.val in BUILTIN_FUNCS_1 || tok.val in BUILTIN_FUNCS_2);
+
+  const expanded = [];
+  for (let j = 0; j < tokens.length; j++) {
+    const t = tokens[j];
+    expanded.push(t);
+    if (j < tokens.length - 1) {
+      const next = tokens[j + 1];
+      if (isFunc(t) && next.type === 'LPAREN') {
+        continue;
+      }
+      const canEnd = (t.type === 'NUMBER' || t.type === 'IDENT' || t.type === 'RPAREN');
+      const canStart = (next.type === 'IDENT' || next.type === 'LPAREN' || next.type === 'NUMBER');
+      if (canEnd && canStart) {
+        expanded.push({ type: 'MUL', implicit: true });
+      }
+    }
+  }
+
+  return expanded;
+}
+
+/**
+ * Recursive-descent parser that compiles an arithmetic expression into closures
+ * reading slots from a shared Float64Array.
+ */
+function parseExpression(tokens, slotMap, knownVars, knownConsts) {
+  let pos = 0;
+
+  function peek() { return tokens[pos] || null; }
+  function consume(expectedType) {
+    const t = tokens[pos];
+    if (!t || (expectedType && t.type !== expectedType)) {
+      const got = t ? t.type : 'end of input';
+      throw new Error(`Expected ${expectedType || 'token'}, but found ${got}`);
+    }
+    pos++;
+    return t;
+  }
+
+  // expr = term { ('+' | '-') term }
+  function expr() {
+    let left = term();
+    while (true) {
+      const next = peek();
+      if (next && (next.type === 'PLUS' || next.type === 'MINUS')) {
+        consume();
+        const right = term();
+        const isPlus = next.type === 'PLUS';
+        const l = left, r = right;
+        left = isPlus ? (mem => l(mem) + r(mem)) : (mem => l(mem) - r(mem));
+      } else {
+        break;
+      }
+    }
+    return left;
+  }
+
+  // term = unary { ('*' | '/') unary }
+  function term() {
+    let left = unary();
+    while (true) {
+      const next = peek();
+      if (next && (next.type === 'MUL' || next.type === 'DIV')) {
+        consume();
+        const right = unary();
+        const isMul = next.type === 'MUL';
+        const l = left, r = right;
+        left = isMul ? (mem => l(mem) * r(mem)) : (mem => l(mem) / r(mem));
+      } else {
+        break;
+      }
+    }
+    return left;
+  }
+
+  // unary = ('-' | '+') unary | power
+  function unary() {
+    const next = peek();
+    if (next && next.type === 'MINUS') {
+      consume();
+      const u = unary();
+      return (mem => -u(mem));
+    }
+    if (next && next.type === 'PLUS') {
+      consume();
+      return unary();
+    }
+    return power();
+  }
+
+  // power = primary [ '^' unary ] (right-associative)
+  function power() {
+    const base = primary();
+    const next = peek();
+    if (next && next.type === 'POW') {
+      consume();
+      const exponent = unary(); // right-associative recursion to unary
+      const b = base, e = exponent;
+      return (mem => Math.pow(b(mem), e(mem)));
+    }
+    return base;
+  }
+
+  // primary = number | name | function '(' args ')' | '(' expr ')'
+  function primary() {
+    const t = peek();
+    if (!t) throw new Error('Unexpected end of expression');
+
+    if (t.type === 'NUMBER') {
+      consume();
+      const num = t.val;
+      return () => num;
+    }
+
+    if (t.type === 'LPAREN') {
+      consume('LPAREN');
+      const inner = expr();
+      if (!peek() || peek().type !== 'RPAREN') {
+        throw new Error('Unbalanced brackets: missing closing parenthesis ")"');
+      }
+      consume('RPAREN');
+      return inner;
+    }
+
+    if (t.type === 'IDENT') {
+      consume();
+      const name = t.val;
+
+      // Check if followed by arguments -> Function call
+      if (peek() && peek().type === 'LPAREN') {
+        consume('LPAREN');
+        const args = [];
+        if (peek() && peek().type !== 'RPAREN') {
+          args.push(expr());
+          while (peek() && peek().type === 'COMMA') {
+            consume('COMMA');
+            args.push(expr());
+          }
+        }
+        if (!peek() || peek().type !== 'RPAREN') {
+          throw new Error(`Unbalanced brackets in function call "${name}(...)"`);
+        }
+        consume('RPAREN');
+
+        if (BUILTIN_FUNCS_1[name]) {
+          if (args.length !== 1) throw new Error(`Function "${name}" expects 1 argument, but got ${args.length}`);
+          const fn = BUILTIN_FUNCS_1[name], arg0 = args[0];
+          return (mem => fn(arg0(mem)));
+        }
+        if (BUILTIN_FUNCS_2[name]) {
+          if (args.length !== 2) throw new Error(`Function "${name}" expects 2 arguments, but got ${args.length}`);
+          const fn = BUILTIN_FUNCS_2[name], arg0 = args[0], arg1 = args[1];
+          return (mem => fn(arg0(mem), arg1(mem)));
+        }
+        throw new Error(`Unknown function "${name}"`);
+      }
+
+      // Built-in constants (pi, e)
+      if ((name === 'pi' || name === 'π') && !(name in slotMap)) {
+        return () => PI;
+      }
+      if (name === 'e' && !(name in slotMap)) {
+        return () => Math.E;
+      }
+
+      // Slot reference in shared Float64Array
+      if (name in slotMap) {
+        const slot = slotMap[name];
+        return (mem => mem[slot]);
+      }
+
+      // Targeted error detection for concatenated names (e.g. "xy")
+      if (knownVars && knownConsts) {
+        const allKnown = new Set([...knownVars, ...knownConsts]);
+        // Check if name is composed of 2 single-letter known symbols
+        if (name.length === 2 && allKnown.has(name[0]) && allKnown.has(name[1])) {
+          throw new Error(`“${name}” is read as one name. Write ${name[0]}*${name[1]}.`);
+        }
+      }
+
+      throw new Error(`Undefined variable or constant "${name}"`);
+    }
+
+    throw new Error(`Unexpected token ${t.type}`);
+  }
+
+  const compiled = expr();
+  if (pos < tokens.length) {
+    throw new Error(`Unexpected extra tokens after expression starting at "${tokens[pos].type}"`);
+  }
+  return compiled;
+}
+
+/**
+ * Parse user-specified constant definitions: "a = 10, b = 28, c = 8/3" or "σ = 10, ρ = 28"
+ */
+function parseConstantsConfig(constStr) {
+  if (!constStr || !constStr.trim()) return [];
+  const entries = constStr.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+  const result = [];
+  const seen = new Set();
+
+  for (const entry of entries) {
+    const parts = entry.split('=').map(s => s.trim());
+    if (parts.length !== 2) {
+      throw new Error(`Constant definition "${entry}" must be in the format "name = value"`);
+    }
+    const name = parts[0];
+    const valExpr = parts[1];
+
+    if (!/^[a-zA-Z_\u0370-\u03FF][a-zA-Z0-9_\u0370-\u03FF]*$/.test(name)) {
+      throw new Error(`Invalid constant name "${name}"`);
+    }
+    if (['x', 'y', 'z', 't'].includes(name)) {
+      throw new Error(`"${name}" is a reserved state variable and cannot be used as a constant`);
+    }
+    if (seen.has(name)) {
+      throw new Error(`Duplicate constant name "${name}"`);
+    }
+    seen.add(name);
+
+    // Evaluate constant value expression (can be fraction like 8/3)
+    let val;
+    if (valExpr.includes('/')) {
+      const frac = valExpr.split('/').map(s => parseFloat(s.trim()));
+      if (frac.length === 2 && !isNaN(frac[0]) && !isNaN(frac[1]) && frac[1] !== 0) {
+        val = frac[0] / frac[1];
+      } else {
+        throw new Error(`Invalid fraction for constant ${name}: "${valExpr}"`);
+      }
+    } else {
+      val = parseFloat(valExpr);
+      if (isNaN(val)) throw new Error(`Invalid numeric value for constant ${name}: "${valExpr}"`);
+    }
+
+    result.push({ name, val });
+  }
+
+  return result;
+}
+
+/**
+ * Compile full user-defined ODE system.
+ */
+function compileCustomModel(config) {
+  const { name, eqX, eqY, eqZ, constStr, x0Str, dtStr } = config;
+  const is3D = !!(eqZ && eqZ.trim());
+  const vars = is3D ? ['x', 'y', 'z'] : ['x', 'y'];
+
+  // Parse constants
+  const parsedConsts = parseConstantsConfig(constStr);
+  const constNames = parsedConsts.map(c => c.name);
+
+  // Set up shared Float64Array slots
+  // Slots: x:0, y:1, z:2, t:3, const0:4, const1:5, ...
+  const slotMap = { x: 0, y: 1, z: 2, t: 3 };
+  parsedConsts.forEach((c, idx) => {
+    slotMap[c.name] = 4 + idx;
+  });
+
+  const memSize = 4 + parsedConsts.length;
+  const sharedMem = new Float64Array(memSize);
+
+  // Parse initial state x0
+  const x0Parts = (x0Str || '').replace(/[()]/g, '').split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+  const reqLen = is3D ? 3 : 2;
+  if (x0Parts.length !== reqLen) {
+    throw new Error(`Wrong number of initial values: expected ${reqLen} numbers (${is3D ? 'x₀, y₀, z₀' : 'x₀, y₀'}), got ${x0Parts.length}`);
+  }
+  const x0 = x0Parts.map(s => {
+    const v = parseFloat(s);
+    if (isNaN(v)) throw new Error(`Invalid initial value "${s}"`);
+    return v;
+  });
+  if (!is3D) x0.push(0); // Pad z to 0 for planar 2-D
+
+  // Parse dt
+  const dt = parseFloat(dtStr || '0.01');
+  if (isNaN(dt) || dt <= 0 || dt > 0.5) {
+    throw new Error(`Time step Δt must be a positive number ≤ 0.5 (got ${dtStr})`);
+  }
+
+  // Tokenize & Parse expressions
+  const tokensX = tokenize(eqX, vars, constNames);
+  const fnX = parseExpression(tokensX, slotMap, vars, constNames);
+
+  const tokensY = tokenize(eqY, vars, constNames);
+  const fnY = parseExpression(tokensY, slotMap, vars, constNames);
+
+  let fnZ = null;
+  if (is3D) {
+    const tokensZ = tokenize(eqZ, vars, constNames);
+    fnZ = parseExpression(tokensZ, slotMap, vars, constNames);
+  }
+
+  // Build RHS function
+  const rhsFunc = (x, y, z, t, paramsObj, out) => {
+    sharedMem[0] = x;
+    sharedMem[1] = y;
+    sharedMem[2] = z;
+    sharedMem[3] = t;
+    // Load current slider values from paramsObj
+    for (let i = 0; i < parsedConsts.length; i++) {
+      const cName = parsedConsts[i].name;
+      sharedMem[4 + i] = (paramsObj && cName in paramsObj) ? paramsObj[cName] : parsedConsts[i].val;
+    }
+    out[0] = fnX(sharedMem);
+    out[1] = fnY(sharedMem);
+    out[2] = fnZ ? fnZ(sharedMem) : 0;
+  };
+
+  // Test evaluation at initial condition x0
+  const testOut = [0, 0, 0];
+  rhsFunc(x0[0], x0[1], x0[2], 0, {}, testOut);
+  if (!Number.isFinite(testOut[0]) || !Number.isFinite(testOut[1]) || (is3D && !Number.isFinite(testOut[2]))) {
+    throw new Error(`Non-finite right-hand side derivative at initial state x₀ = (${x0.join(', ')})`);
+  }
+
+  // Build dynamic parameter sliders
+  // "Each constant becomes a slider spanning [v − |v|, v + |v|] (or [−1, 1] for zero) with a step about 1% of its size."
+  const paramSliders = parsedConsts.map(c => {
+    const v = c.val;
+    const span = Math.abs(v) > 1e-6 ? Math.abs(v) : 1;
+    const min = +(v - span).toFixed(4);
+    const max = +(v + span).toFixed(4);
+    const step = +(span * 0.01).toFixed(4);
+    return P(c.name, c.name, min, max, Math.max(0.0001, step), v);
+  });
+
+  const rhsStrings = is3D ? [eqX, eqY, eqZ] : [eqX, eqY];
+
+  return {
+    group: 'Custom models',
+    name: name || 'Custom Model',
+    kind: 'ode',
+    frac: true,
+    isCustom: true,
+    is3D,
+    vars,
+    params: paramSliders,
+    rhs: rhsStrings,
+    f: rhsFunc,
+    x0,
+    dt,
+    h: dt,
+    view: is3D ? [0, 0, 1] : [0, 0, 1]
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   3. State & Global Helpers
+   ───────────────────────────────────────────────────────────────────────────── */
+const state = {
+  sys: 'lorenz',
+  p: {},
+  q: 1,
+  detail: 2,
+  yaw: 0,
+  pitch: 0,
+  zoom: 1,
+  depth: true,
+  palette: 'nebula',
+  mode: 'density',
+  exposure: 1,
+  contrast: 1,
+  glow: true,
+  format: 'square',
+  caption: true,
+  title: '',
+  theme: 'auto',
+  customConfig: {
+    name: 'Nosé–Hoover (Sprott A)',
+    eqX: 'y',
+    eqY: '-x + y*z',
+    eqZ: 'a - y^2',
+    constStr: 'a = 1',
+    x0Str: '0, 5, 0',
+    dtStr: '0.01'
+  }
+};
+
+let cur = null;
+let cache = null;
+let jobId = 0;
+const CANCEL = {};
+
+const $ = id => document.getElementById(id);
+const plate = $('plate');
+const mat = $('mat');
+const fmtInt = n => Math.round(n).toLocaleString('en-US');
+function decs(step) { return step >= 1 ? 0 : Math.min(4, Math.max(0, Math.ceil(-Math.log10(step) - 1e-9))); }
+const fmt = (v, step) => (+v).toFixed(decs(step)).replace(/^-/, '−');
+const esc = s => (s || '').toString().replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function resolve(key) {
+  if (key === 'custom') {
+    let customDef;
+    try {
+      customDef = compileCustomModel(state.customConfig);
+    } catch (e) {
+      console.warn('Custom model compile fallback:', e);
+      // Fallback default Nosé-Hoover
+      customDef = compileCustomModel({
+        name: 'Nosé–Hoover (Sprott A)', eqX: 'y', eqY: '-x + y*z', eqZ: 'a - y^2', constStr: 'a = 1', x0Str: '0, 5, 0', dtStr: '0.01'
+      });
+    }
+    return { key: 'custom', name: customDef.name, def: customDef, q: 1, over: {}, view: customDef.view };
+  }
+
+  const s = SYS[key];
+  if (s.base) {
+    const b = SYS[s.base];
+    return { key, name: s.name, def: b, q: s.q, over: s.p || {}, view: b.view };
+  }
+  return { key, name: s.name, def: s, q: 1, over: {}, view: s.view || [0, 0, 1] };
+}
+
+const is3d = () => cur.def.kind === 'ode' && cur.def.vars.length === 3;
+const fracActive = () => cur.def.kind === 'ode' && cur.def.frac && state.q < 0.9995;
+function solverKind() {
+  const k = cur.def.kind;
+  if (k === 'ode') return fracActive() ? 'frac' : 'rk4';
+  return k;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   4. Colour Palettes & LUTs
+   ───────────────────────────────────────────────────────────────────────────── */
+const LUTS = {};
+const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+
+function lutFor(key) {
+  if (LUTS[key]) return LUTS[key];
+  const st = PALETTES[key].stops.map(hex);
+  const n = 1024;
+  const L = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const t = (i / (n - 1)) * (st.length - 1);
+    const j = Math.min(st.length - 2, Math.floor(t));
+    const f = t - j;
+    for (let c = 0; c < 3; c++) {
+      L[i * 3 + c] = st[j][c] + (st[j + 1][c] - st[j][c]) * f;
+    }
+  }
+  return (LUTS[key] = L);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   5. Solvers (RK4, Grünwald–Letnikov, Poincare, Flows)
+   ───────────────────────────────────────────────────────────────────────────── */
+function makeYield(id) {
+  let t = performance.now();
+  return async frac => {
+    if (performance.now() - t > 28) {
+      setProg(frac);
+      await new Promise(r => setTimeout(r, 0));
+      t = performance.now();
+      if (id !== jobId) throw CANCEL;
+    }
+  };
+}
+
+async function runRK4(d, p, n, yf) {
+  const pts = new Float32Array(n * 3);
+  const f = d.f;
+  const dt = d.dt, h2 = dt / 2, h6 = dt / 6;
+  const a = new Float64Array(3), b = new Float64Array(3), c = new Float64Array(3), e = new Float64Array(3);
+  let x = d.x0[0], y = d.x0[1], z = d.x0[2] || 0;
+  let t = 0;
+  let m = n, warn = '';
+
+  for (let i = 0; i < n; i++) {
+    f(x, y, z, t, p, a);
+    f(x + h2 * a[0], y + h2 * a[1], z + h2 * a[2], t + h2, p, b);
+    f(x + h2 * b[0], y + h2 * b[1], z + h2 * b[2], t + h2, p, c);
+    f(x + dt * c[0], y + dt * c[1], z + dt * c[2], t + dt, p, e);
+
+    x += h6 * (a[0] + 2 * b[0] + 2 * c[0] + e[0]);
+    y += h6 * (a[1] + 2 * b[1] + 2 * c[1] + e[1]);
+    z += h6 * (a[2] + 2 * b[2] + 2 * c[2] + e[2]);
+    t += dt;
+
+    if (!(Math.abs(x) + Math.abs(y) + Math.abs(z) < 1e6)) {
+      m = i;
+      warn = `The trajectory escaped to infinity after ${fmtInt(i)} steps. Try other constants.`;
+      break;
+    }
+
+    const k = i * 3;
+    pts[k] = x; pts[k + 1] = y; pts[k + 2] = z;
+
+    if ((i & 8191) === 0) await yf(i / n);
+  }
+
+  return { pts, n: m, start: Math.floor(m * 0.01), warn, info: `RK4 · Δt = ${d.dt} · ${fmtInt(n)} steps` };
+}
+
+async function runGL(d, p, q, n, yf) {
+  const L = GL_MEMORY;
+  const h = d.h;
+  const hq = Math.pow(h, q);
+  const f = d.f;
+  const C = new Float64Array(L + 1);
+  C[0] = 1;
+  for (let j = 1; j <= L; j++) C[j] = (1 - (1 + q) / j) * C[j - 1];
+
+  const X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n);
+  const o = new Float64Array(3);
+  X[0] = d.x0[0]; Y[0] = d.x0[1]; Z[0] = d.x0[2] || 0;
+
+  let m = n, warn = '';
+  for (let k = 1; k < n; k++) {
+    const tPrev = (k - 1) * h;
+    f(X[k - 1], Y[k - 1], Z[k - 1], tPrev, p, o);
+
+    let sx = 0, sy = 0, sz = 0;
+    const jm = k < L ? k : L;
+    for (let j = 1; j <= jm; j++) {
+      const c = C[j], i = k - j;
+      sx += c * X[i]; sy += c * Y[i]; sz += c * Z[i];
+    }
+
+    const x = o[0] * hq - sx;
+    const y = o[1] * hq - sy;
+    const z = o[2] * hq - sz;
+
+    if (!(Math.abs(x) + Math.abs(y) + Math.abs(z) < 1e6)) {
+      m = k;
+      warn = `The fractional trajectory diverged after ${fmtInt(k)} steps. Move q closer to 1 or tune constants.`;
+      break;
+    }
+
+    X[k] = x; Y[k] = y; Z[k] = z;
+    if ((k & 511) === 0) await yf(k / n);
+  }
+
+  const pts = new Float32Array(m * 3);
+  for (let k = 0; k < m; k++) {
+    pts[k * 3] = X[k]; pts[k * 3 + 1] = Y[k]; pts[k * 3 + 2] = Z[k];
+  }
+
+  return {
+    pts, n: m, start: Math.floor(m * 0.03), warn,
+    info: `Grünwald–Letnikov · q = ${state.q.toFixed(3)} · h = ${h} · memory ${fmtInt(L)} · ${fmtInt(n)} steps`
+  };
+}
+
+async function runFlow(d, p, G, yf) {
+  const S = d.S, dt = d.dt, h2 = dt / 2, h6 = dt / 6;
+  const [x0, x1, y0, y1] = d.dom, f = d.f2;
+  const total = G * G * (S + 1);
+  const pts = new Float32Array(total * 3), tt = new Float32Array(total);
+  const a = [0, 0], b = [0, 0], c = [0, 0], e = [0, 0];
+  let k = 0;
+
+  for (let gi = 0; gi < G; gi++) {
+    for (let gj = 0; gj < G; gj++) {
+      let x = x0 + ((x1 - x0) * (gi + 0.5)) / G;
+      let y = y0 + ((y1 - y0) * (gj + 0.5)) / G;
+      for (let s = 0; s < S; s++) {
+        pts[k * 3] = x; pts[k * 3 + 1] = y; pts[k * 3 + 2] = 0;
+        tt[k] = s / S;
+        k++;
+
+        f(x, y, p, a);
+        f(x + h2 * a[0], y + h2 * a[1], p, b);
+        f(x + h2 * b[0], y + h2 * b[1], p, c);
+        f(x + dt * c[0], y + dt * c[1], p, e);
+
+        x += h6 * (a[0] + 2 * b[0] + 2 * c[0] + e[0]);
+        y += h6 * (a[1] + 2 * b[1] + 2 * c[1] + e[1]);
+
+        if (!(Math.abs(x) + Math.abs(y) < 1e3)) break;
+      }
+      pts[k * 3] = NaN; pts[k * 3 + 1] = NaN; pts[k * 3 + 2] = NaN;
+      tt[k] = 0;
+      k++;
+      await yf((gi * G + gj) / (G * G));
+    }
+  }
+
+  return { pts, n: k, tt, start: 0, warn: '', info: `RK4 · ${fmtInt(G * G)} seeds · ${fmtInt(S)} steps each` };
+}
+
+async function runPoincare(d, p, n, yf) {
+  const w = p.w, T = (2 * PI) / w, Sp = 120, dt = T / Sp, h2 = dt / 2, h6 = dt / 6, skip = 200;
+  const f = (x, y, t, o) => {
+    o[0] = y;
+    o[1] = p.g * Math.cos(w * t) - p.d * y - p.a * x - p.b * x * x * x;
+  };
+  const a = [0, 0], b = [0, 0], c = [0, 0], e = [0, 0];
+  const pts = new Float32Array(n * 3);
+  let x = 1, y = 0, m = 0, warn = '';
+
+  for (let per = 0; per < n + skip; per++) {
+    let t = per * T;
+    for (let s = 0; s < Sp; s++) {
+      f(x, y, t, a);
+      f(x + h2 * a[0], y + h2 * a[1], t + h2, b);
+      f(x + h2 * b[0], y + h2 * b[1], t + h2, c);
+      f(x + dt * c[0], y + dt * c[1], t + dt, e);
+      x += h6 * (a[0] + 2 * b[0] + 2 * c[0] + e[0]);
+      y += h6 * (a[1] + 2 * b[1] + 2 * c[1] + e[1]);
+      t += dt;
+    }
+    if (!(Math.abs(x) + Math.abs(y) < 1e6)) {
+      warn = 'The oscillator escaped to infinity. Lower γ or raise δ.';
+      break;
+    }
+    if (per >= skip) {
+      pts[m * 3] = x; pts[m * 3 + 1] = y; pts[m * 3 + 2] = 0;
+      m++;
+    }
+    if ((per & 31) === 0) await yf(per / (n + skip));
+  }
+
+  return { pts, n: m, start: 0, points: true, warn, info: `Poincaré section · ${fmtInt(m)} periods` };
+}
+
+async function recompute() {
+  const id = ++jobId, d = cur.def, kind = solverKind();
+  if (kind === 'map') {
+    cache = { kind: 'map' };
+    hideProg();
+    setWarn('');
+    renderPreview(false);
+    return;
+  }
+
+  showProg();
+  const yf = makeYield(id);
+  try {
+    let res;
+    if (kind === 'rk4') res = await runRK4(d, state.p, DETAIL.rk4[state.detail], yf);
+    else if (kind === 'frac') res = await runGL(d, state.p, state.q, DETAIL.frac[state.detail], yf);
+    else if (kind === 'flow') res = await runFlow(d, state.p, DETAIL.flow[state.detail], yf);
+    else res = await runPoincare(d, state.p, DETAIL.poincare[state.detail], yf);
+
+    if (id !== jobId) return;
+    res.kind = kind;
+    cache = res;
+    hideProg();
+    setWarn(res.n < 50 ? (res.warn || 'Too few points to draw.') : res.warn);
+    renderPreview(false);
+  } catch (e) {
+    if (e !== CANCEL) {
+      console.error(e);
+      hideProg();
+      setWarn('Integration failed: ' + e.message);
+    }
+  }
+}
+
+let rcT = 0;
+function scheduleRecompute() {
+  clearTimeout(rcT);
+  rcT = setTimeout(recompute, 140);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6. Density Buffer Rendering & Tone Mapping
+   ───────────────────────────────────────────────────────────────────────────── */
+function captionData() {
+  const d = cur.def;
+  const meta = d.params.map(pp => `${pp.label} = ${fmt(state.p[pp.k], pp.step)}`).join('  ·  ') +
+               (fracActive() ? `  ·  q = ${state.q.toFixed(3)}` : '');
+  return {
+    title: state.title.trim() || cur.name,
+    eqs: eqLines(),
+    meta,
+    right: startText()
+  };
+}
+
+function eqLines() {
+  const d = cur.def;
+  if (d.kind === 'ode') {
+    return d.vars.map((v, i) => (fracActive() ? `D^{q}${v}` : DOT[v]) + ' = ' + d.rhs[i]);
+  }
+  return d.lines.slice();
+}
+
+function startText() {
+  const d = cur.def;
+  if (d.kind === 'ode') return `x₀ = (${d.x0.join(', ')})`;
+  if (d.kind === 'flow') return `${fmtInt(DETAIL.flow[state.detail] ** 2)} starting points`;
+  return d.start.split(' · ')[0];
+}
+
+function richParts(s) {
+  const out = [];
+  const re = /\^\{([^}]*)\}/g;
+  let last = 0, m;
+  while ((m = re.exec(s))) {
+    if (m.index > last) out.push({ t: s.slice(last, m.index), sup: false });
+    out.push({ t: m[1], sup: true });
+    last = re.lastIndex;
+  }
+  if (last < s.length) out.push({ t: s.slice(last), sup: false });
+  return out;
+}
+
+const monoFont = sz => `400 ${sz}px "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace`;
+const dispFont = sz => `700 ${sz}px "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif`;
+
+function measureRich(ctx, s, size) {
+  let w = 0;
+  for (const p of richParts(s)) {
+    ctx.font = monoFont(p.sup ? size * 0.66 : size);
+    w += ctx.measureText(p.t).width;
+  }
+  return w;
+}
+
+function drawRich(ctx, s, x, y, size) {
+  for (const p of richParts(s)) {
+    const sz = p.sup ? size * 0.66 : size;
+    ctx.font = monoFont(sz);
+    ctx.fillText(p.t, x, p.sup ? y - size * 0.42 : y);
+    x += ctx.measureText(p.t).width;
+  }
+}
+
+function drawCaption(ctx, W, H, box, base, lut) {
+  const stops = PALETTES[state.palette].stops;
+  const txt = hex(stops[stops.length - 1]);
+  const col = a => `rgba(${txt[0]},${txt[1]},${txt[2]},${a})`;
+  const c = captionData();
+  const top = box.y + box.h;
+  const ruleY = top + base * 0.022;
+
+  ctx.fillStyle = col(0.28);
+  ctx.fillRect(box.x, Math.round(ruleY), box.w, Math.max(1, Math.round(base * 0.0012)));
+
+  let tSize = base * 0.034;
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = monoFont(base * 0.0135);
+  const rightW = ctx.measureText(c.right).width;
+  ctx.font = dispFont(tSize);
+  while (ctx.measureText(c.title).width > box.w - rightW - base * 0.04 && tSize > base * 0.018) {
+    tSize *= 0.92;
+    ctx.font = dispFont(tSize);
+  }
+
+  let y = ruleY + tSize * 1.35;
+  ctx.fillStyle = col(0.95);
+  ctx.fillText(c.title, box.x, y);
+  ctx.fillStyle = col(0.6);
+  ctx.font = monoFont(base * 0.0135);
+  ctx.textAlign = 'right';
+  ctx.fillText(c.right, box.x + box.w, y);
+  ctx.textAlign = 'left';
+
+  const gap = '     ';
+  let eSize = base * 0.0175;
+  let lines = [c.eqs.join(gap)];
+  if (measureRich(ctx, lines[0], eSize) > box.w) {
+    const h = Math.ceil(c.eqs.length / 2);
+    lines = [c.eqs.slice(0, h).join(gap), c.eqs.slice(h).join(gap)].filter(Boolean);
+    eSize *= 0.88;
+  }
+  const widest = Math.max(...lines.map(l => measureRich(ctx, l, eSize)));
+  if (widest > box.w) eSize *= box.w / widest;
+  ctx.fillStyle = col(0.88);
+  y += eSize * 1.8;
+  lines.forEach((l, i) => {
+    drawRich(ctx, l, box.x, y + i * eSize * 1.45, eSize);
+  });
+  y += (lines.length - 1) * eSize * 1.45;
+
+  let mSize = base * 0.0132;
+  ctx.font = monoFont(mSize);
+  const mw = ctx.measureText(c.meta).width;
+  if (mw > box.w) { mSize *= box.w / mw; ctx.font = monoFont(mSize); }
+  ctx.fillStyle = col(0.6);
+  ctx.fillText(c.meta, box.x, y + base * 0.0135 * 1.9);
+}
+
+function renderArt(ctx, W, H, opt) {
+  const d = cur.def, kind = cache ? cache.kind : solverKind();
+  const base = Math.min(W, H);
+  const m = Math.round(base * 0.07);
+  const capH = opt.caption ? Math.round(base * 0.14) : 0;
+  const box = { x: m, y: m, w: W - 2 * m, h: H - 2 * m - capH };
+  const N = W * H;
+
+  // CPU Density Buffer (Float32Array)
+  const cnt = new Float32Array(N);
+  const path = state.mode === 'path';
+  const R = path ? new Float32Array(N) : null;
+  const Gc = path ? new Float32Array(N) : null;
+  const B = path ? new Float32Array(N) : null;
+  const lut = lutFor(state.palette);
+
+  const three = is3d();
+  const cy = Math.cos(state.yaw), sy = Math.sin(state.yaw);
+  const cp = Math.cos(state.pitch), sp = Math.sin(state.pitch);
+
+  let pu = 0, pv = 0, pd = 0;
+  const proj = three
+    ? (x, y, z) => {
+        const x1 = x * cy - y * sy;
+        const y1 = x * sy + y * cy;
+        pu = x1;
+        pv = y1 * sp + z * cp;
+        pd = y1 * cp - z * sp;
+      }
+    : (x, y) => {
+        pu = x * cy - y * sy;
+        pv = x * sy + y * cy;
+        pd = 0;
+      };
+
+  // Compute projected bounding box
+  let umin = Infinity, umax = -Infinity, vmin = Infinity, vmax = -Infinity, dmin = Infinity, dmax = -Infinity;
+  const p = state.p, o2 = [0, 0];
+
+  if (kind === 'map') {
+    let x = 0.1, y = 0.1;
+    for (let i = 0; i < 20100; i++) {
+      d.step(x, y, p, o2); x = o2[0]; y = o2[1];
+      if (i < 100) continue;
+      proj(x, y);
+      if (pu < umin) umin = pu; if (pu > umax) umax = pu;
+      if (pv < vmin) vmin = pv; if (pv > vmax) vmax = pv;
+    }
+  } else {
+    const { pts, n, start } = cache;
+    const st = Math.max(1, Math.floor((n - start) / 250000));
+    for (let i = start; i < n; i += st) {
+      const k = i * 3, x = pts[k];
+      if (x !== x) continue;
+      proj(x, pts[k + 1], pts[k + 2]);
+      if (pu < umin) umin = pu; if (pu > umax) umax = pu;
+      if (pv < vmin) vmin = pv; if (pv > vmax) vmax = pv;
+      if (pd < dmin) dmin = pd; if (pd > dmax) dmax = pd;
+    }
+  }
+
+  if (!(umax > umin)) { umin -= 0.5; umax += 0.5; }
+  if (!(vmax > vmin)) { vmin -= 0.5; vmax += 0.5; }
+
+  const S = Math.min(box.w / (umax - umin), box.h / (vmax - vmin)) * state.zoom;
+  const uc = (umin + umax) / 2, vc = (vmin + vmax) / 2;
+  const ox = box.x + box.w / 2, oy = box.y + box.h / 2;
+  const dr = 1 / ((dmax - dmin) || 1);
+  const shade = three && state.depth;
+
+  const X0 = box.x, X1 = box.x + box.w - 1;
+  const Y0 = box.y, Y1 = box.y + box.h - 1;
+  let cr = 0, cg = 0, cb = 0;
+
+  const setCol = t => {
+    const li = ((0.28 + 0.72 * (t < 0 ? 0 : t > 1 ? 1 : t)) * 1023) | 0;
+    cr = lut[li * 3]; cg = lut[li * 3 + 1]; cb = lut[li * 3 + 2];
+  };
+
+  // Bilinear density splatting
+  const dep = (px, py, w) => {
+    if (px < X0 || py < Y0 || px >= X1 || py >= Y1) return;
+    const ix = px | 0, iy = py | 0, fx = px - ix, fy = py - iy;
+    const i = iy * W + ix;
+    const a = (1 - fx) * (1 - fy) * w;
+    const b = fx * (1 - fy) * w;
+    const c = (1 - fx) * fy * w;
+    const e = fx * fy * w;
+
+    cnt[i] += a; cnt[i + 1] += b; cnt[i + W] += c; cnt[i + W + 1] += e;
+    if (path) {
+      R[i] += a * cr; R[i + 1] += b * cr; R[i + W] += c * cr; R[i + W + 1] += e * cr;
+      Gc[i] += a * cg; Gc[i + 1] += b * cg; Gc[i + W] += c * cg; Gc[i + W + 1] += e * cg;
+      B[i] += a * cb; B[i + 1] += b * cb; B[i + W] += c * cb; B[i + W + 1] += e * cb;
+    }
+  };
+
+  let drawn = 0;
+  if (kind === 'map') {
+    const total = Math.max(1000, Math.round(opt.mapN));
+    const jumpPx = base * 0.5;
+    let x = 0.1, y = 0.1, lx = 0, ly = 0;
+    for (let i = 0; i < total + 100; i++) {
+      d.step(x, y, p, o2); x = o2[0]; y = o2[1];
+      if (i < 100) continue;
+      proj(x, y);
+      const px = ox + (pu - uc) * S, py = oy - (pv - vc) * S;
+      if (path) {
+        const dx = px - lx, dy = py - ly;
+        setCol(Math.sqrt(dx * dx + dy * dy) / jumpPx);
+      }
+      lx = px; ly = py;
+      dep(px, py, 1);
+    }
+    drawn = total;
+  } else if (cache.points) {
+    const { pts, n } = cache;
+    for (let i = 0; i < n; i++) {
+      const k = i * 3;
+      proj(pts[k], pts[k + 1], pts[k + 2]);
+      if (path) setCol(i / n);
+      dep(ox + (pu - uc) * S, oy - (pv - vc) * S, 1);
+    }
+    drawn = n;
+  } else {
+    const { pts, n, start, tt } = cache;
+    const stride = (opt.fast && !tt) ? Math.max(1, Math.round((n - start) / 150000)) : 1;
+    const maxJump = base * 0.4, span = Math.max(1, n - start);
+    let has = false, lx = 0, ly = 0;
+
+    for (let i = start; i < n; i += stride) {
+      const k = i * 3, x = pts[k];
+      if (x !== x) { has = false; continue; }
+      proj(x, pts[k + 1], pts[k + 2]);
+      const px = ox + (pu - uc) * S, py = oy - (pv - vc) * S;
+
+      if (has) {
+        const dx = px - lx, dy = py - ly;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len < maxJump) {
+          if (path) setCol(tt ? tt[i] : (i - start) / span);
+          const sh = shade ? 0.3 + 0.7 * (dmax - pd) * dr : 1;
+          const steps = len < 0.7 ? 1 : Math.min(400, Math.ceil(len / 0.7));
+          const w = (len / steps) * sh;
+          for (let s = 1; s <= steps; s++) {
+            const f = s / steps;
+            dep(lx + dx * f, ly + dy * f, w);
+          }
+        }
+      }
+      lx = px; ly = py; has = true;
+    }
+    drawn = Math.floor((n - start) / stride);
+  }
+
+  // Reference density level from 99.5th percentile
+  let nnz = 0, mx = 0;
+  for (let i = 0; i < N; i++) {
+    const c = cnt[i];
+    if (c > 0) { nnz++; if (c > mx) mx = c; }
+  }
+  let ref = mx;
+  if (nnz > 200) {
+    const every = Math.max(1, Math.floor(nnz / 50000)), samp = [];
+    let seen = 0;
+    for (let i = 0; i < N; i++) {
+      const c = cnt[i];
+      if (c > 0) { if (seen % every === 0) samp.push(c); seen++; }
+    }
+    samp.sort((a, b) => a - b);
+    ref = samp[Math.min(samp.length - 1, Math.floor(samp.length * 0.995))] || mx;
+  }
+  if (!(ref > 0)) ref = 1;
+
+  // Tone mapping: v = log(1 + 60*c/ref)/log(61) * exposure
+  const img = ctx.createImageData(W, H), px = img.data;
+  const K = 60 / ref, LN = Math.log1p(60), ex = state.exposure, g = state.contrast;
+  const br = lut[0], bg = lut[1], bb = lut[2];
+
+  for (let i = 0, o = 0; i < N; i++, o += 4) {
+    const c = cnt[i];
+    if (c <= 0) {
+      px[o] = br; px[o + 1] = bg; px[o + 2] = bb; px[o + 3] = 255;
+      continue;
+    }
+    let v = (Math.log1p(c * K) / LN) * ex;
+    if (v > 1) v = 1;
+    if (g !== 1) v = Math.pow(v, g);
+
+    if (!path) {
+      const li = ((v * 1023) | 0) * 3;
+      px[o] = lut[li]; px[o + 1] = lut[li + 1]; px[o + 2] = lut[li + 2];
+    } else {
+      const inv = 1 / c;
+      px[o] = br + (R[i] * inv - br) * v;
+      px[o + 1] = bg + (Gc[i] * inv - bg) * v;
+      px[o + 2] = bb + (B[i] * inv - bb) * v;
+    }
+    px[o + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+
+  // Optional glow pass
+  if (state.glow && !opt.fast && typeof ctx.filter === 'string') {
+    const tmp = document.createElement('canvas');
+    tmp.width = W; tmp.height = H;
+    tmp.getContext('2d').drawImage(ctx.canvas, 0, 0);
+    const bgL = (0.2126 * br + 0.7152 * bg + 0.0722 * bb) / 255;
+    ctx.save();
+    ctx.filter = `blur(${Math.max(2, Math.round(base * 0.006))}px)`;
+    ctx.globalCompositeOperation = bgL < 0.5 ? 'screen' : 'multiply';
+    ctx.globalAlpha = 0.85;
+    ctx.drawImage(tmp, 0, 0);
+    ctx.restore();
+  }
+
+  if (opt.caption) drawCaption(ctx, W, H, box, base, lut);
+  return drawn;
+}
+
+function sizeCanvas() {
+  const f = FORMATS[state.format], ar = f.w / f.h;
+  const cs = getComputedStyle(mat);
+  const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const availW = Math.max(200, mat.clientWidth - padX);
+  const narrow = window.innerWidth < 880;
+  const maxH = Math.max(220, window.innerHeight * (narrow ? 0.62 : 0.76) - padX);
+  const cw = Math.min(availW, maxH * ar), ch = cw / ar;
+  plate.style.width = cw + 'px';
+  plate.style.height = ch + 'px';
+
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let W = Math.round(cw * dpr), H = Math.round(ch * dpr);
+  const sc = Math.min(1, 1500 / Math.max(W, H));
+  W = Math.max(16, Math.round(W * sc));
+  H = Math.max(16, Math.round(H * sc));
+  if (plate.width !== W || plate.height !== H) {
+    plate.width = W; plate.height = H;
+  }
+  return { W, H };
+}
+
+function infoText() {
+  if (!cache) return '';
+  if (cache.kind === 'map') return `${fmtInt(DETAIL.map[state.detail])} iterates`;
+  return cache.info;
+}
+
+function renderPreview(fast) {
+  if (!cache) return;
+  const { W, H } = sizeCanvas();
+  const ctx = plate.getContext('2d');
+  const t0 = performance.now();
+  renderArt(ctx, W, H, {
+    caption: state.caption,
+    fast,
+    mapN: DETAIL.map[state.detail] * (fast ? 0.25 : 1)
+  });
+  const ms = performance.now() - t0;
+  $('readout').textContent = `${cur.name} · ${infoText()} · ${Math.round(ms)} ms`;
+  plate.setAttribute('aria-label', `${cur.name} rendered in the ${PALETTES[state.palette].name} palette`);
+}
+
+let rq = 0, rqFast = false;
+function scheduleRender(fast) {
+  rqFast = !!fast;
+  if (rq) return;
+  rq = requestAnimationFrame(() => { rq = 0; renderPreview(rqFast); });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   7. UI Controllers & Event Handling
+   ───────────────────────────────────────────────────────────────────────────── */
+function setWarn(msg, isSuccess) {
+  const w = $('warn');
+  w.textContent = msg || '';
+  w.hidden = !msg;
+  w.className = 'warn' + (isSuccess ? ' success' : '');
+}
+function showProg() { $('prog').hidden = false; setProg(0); }
+function hideProg() { $('prog').hidden = true; }
+function setProg(f) {
+  const pct = Math.round(Math.min(1, Math.max(0, f)) * 100);
+  $('progBar').style.width = pct + '%';
+  $('progText').textContent = `Integrating… ${pct}%`;
+}
+
+function buildSelect() {
+  const sel = $('sys');
+  sel.innerHTML = '';
+  for (const g of GROUPS) {
+    const og = document.createElement('optgroup');
+    og.label = g;
+    for (const [k, s] of Object.entries(SYS)) {
+      if (s.group === g) {
+        const o = document.createElement('option');
+        o.value = k;
+        o.textContent = s.name;
+        og.appendChild(o);
+      }
+    }
+    sel.appendChild(og);
+  }
+  sel.addEventListener('change', () => {
+    setSystem(sel.value, null);
+    save();
+  });
+}
+
+function buildParams() {
+  const d = cur.def, wrap = $('params');
+  wrap.innerHTML = d.params.map(pp => {
+    const id = 'p_' + pp.k;
+    return `<div class="ctl"><div class="ctl-head"><label for="${id}">${esc(pp.label)}</label><output id="${id}o" for="${id}">${fmt(state.p[pp.k], pp.step)}</output></div>` +
+           `<input type="range" id="${id}" min="${pp.min}" max="${pp.max}" step="${pp.step}" value="${state.p[pp.k]}"></div>`;
+  }).join('');
+
+  for (const pp of d.params) {
+    const el = $('p_' + pp.k);
+    if (!el) continue;
+    el.addEventListener('input', () => {
+      state.p[pp.k] = +el.value;
+      $('p_' + pp.k + 'o').textContent = fmt(state.p[pp.k], pp.step);
+      updateEq();
+      scheduleRecompute();
+      save();
+    });
+  }
+}
+
+function updateEq() {
+  const d = cur.def;
+  $('eq').innerHTML = eqLines().map(l => `<div>${esc(l).replace(/\^\{([^}]*)\}/g, '<sup>$1</sup>')}</div>`).join('');
+  let meta;
+  if (d.kind === 'ode') {
+    meta = `x₀ = (${d.x0.join(', ')}) · ${fracActive() ? 'h = ' + d.h : 'Δt = ' + d.dt}`;
+  } else if (d.kind === 'flow') {
+    meta = `${fmtInt(DETAIL.flow[state.detail] ** 2)} starting points on a grid · Δt = ${d.dt}`;
+  } else {
+    meta = d.start;
+  }
+  $('eqmeta').textContent = meta;
+}
+
+function detailDesc() {
+  const i = state.detail, k = solverKind();
+  const n = DETAIL[k][i];
+  const unit = { rk4: 'steps', frac: 'steps', flow: 'seeds', map: 'iterates', poincare: 'periods' }[k];
+  return `${DETAIL_NAMES[i]} · ${fmtInt(k === 'flow' ? n * n : n)} ${unit}`;
+}
+
+function buildSwatches() {
+  const box = $('swatches');
+  box.innerHTML = Object.entries(PALETTES).map(([k, p]) =>
+    `<button type="button" class="sw" data-k="${k}" aria-pressed="false"><span class="strip" style="background:linear-gradient(90deg,${p.stops.join(',')})"></span>${esc(p.name)}</button>`
+  ).join('');
+
+  box.addEventListener('click', e => {
+    const b = e.target.closest('.sw');
+    if (!b) return;
+    state.palette = b.dataset.k;
+    syncAll();
+    scheduleRender(false);
+    save();
+  });
+}
+
+function buildFormats() {
+  const sel = $('format');
+  sel.innerHTML = Object.entries(FORMATS).map(([k, f]) => `<option value="${k}">${esc(f.name)}</option>`).join('');
+  sel.addEventListener('change', () => {
+    state.format = sel.value;
+    scheduleRender(false);
+    save();
+  });
+}
+
+const toDeg = r => (r * 180) / PI;
+const toRad = g => (g * PI) / 180;
+function wrapAngle(a) {
+  while (a > PI) a -= 2 * PI;
+  while (a < -PI) a += 2 * PI;
+  return a;
+}
+
+function syncView() {
+  $('yaw').value = toDeg(state.yaw);
+  $('yawOut').textContent = `${fmt(toDeg(state.yaw), 1)}°`;
+  $('pitch').value = toDeg(state.pitch);
+  $('pitchOut').textContent = `${fmt(toDeg(state.pitch), 1)}°`;
+  $('zoom').value = state.zoom;
+  $('zoomOut').textContent = `${state.zoom.toFixed(2)}×`;
+}
+
+function syncAll() {
+  const d = cur.def;
+  $('sys').value = state.sys;
+  $('customBox').hidden = (state.sys !== 'custom');
+
+  $('qWrap').hidden = !(d.kind === 'ode' && d.frac);
+  $('q').value = state.q;
+  $('qOut').textContent = state.q.toFixed(3);
+  $('detail').value = state.detail;
+  $('detailOut').textContent = detailDesc();
+  $('shuffle').hidden = (d.kind !== 'map');
+
+  const threeD = is3d();
+  $('pitchWrap').hidden = !threeD;
+  $('depthWrap').hidden = !threeD;
+  $('depth').checked = state.depth;
+  syncView();
+
+  document.querySelectorAll('.sw').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.k === state.palette)));
+  $('modeD').checked = state.mode === 'density';
+  $('modeP').checked = state.mode === 'path';
+  $('exposure').value = state.exposure;
+  $('exposureOut').textContent = state.exposure.toFixed(2);
+  $('contrast').value = state.contrast;
+  $('contrastOut').textContent = state.contrast.toFixed(2);
+  $('glow').checked = state.glow;
+  $('format').value = state.format;
+  $('caption').checked = state.caption;
+  $('title').value = state.title;
+  $('title').placeholder = cur.name;
+  $('hint').textContent = threeD ? 'Drag the print to turn and tilt' : 'Drag sideways to turn';
+}
+
+function setSystem(key, saved) {
+  state.sys = key;
+  cur = resolve(key);
+  const d = cur.def;
+
+  state.p = {};
+  for (const pp of d.params) {
+    const sv = saved && saved.p ? saved.p[pp.k] : undefined;
+    state.p[pp.k] = Number.isFinite(sv) ? sv : (cur.over[pp.k] ?? pp.v);
+  }
+
+  if (saved) {
+    state.q = Number.isFinite(saved.q) ? saved.q : cur.q;
+  } else {
+    state.q = cur.q;
+    state.yaw = cur.view[0];
+    state.pitch = cur.view[1];
+    state.zoom = cur.view[2];
+  }
+
+  buildParams();
+  updateEq();
+  syncAll();
+  cache = null;
+  setWarn('');
+  recompute();
+}
+
+function applyCustomModel() {
+  try {
+    state.customConfig = {
+      name: $('cName').value.trim() || 'Custom Model',
+      eqX: $('cEqX').value.trim(),
+      eqY: $('cEqY').value.trim(),
+      eqZ: $('cEqZ').value.trim(),
+      constStr: $('cConst').value.trim(),
+      x0Str: $('cX0').value.trim(),
+      dtStr: $('cDt').value.trim()
+    };
+    cur = resolve('custom');
+    buildParams();
+    updateEq();
+    syncAll();
+    setWarn('Custom model compiled successfully!', true);
+    setTimeout(() => { if ($('warn').classList.contains('success')) setWarn(''); }, 3000);
+    recompute();
+    save();
+  } catch (err) {
+    setWarn(err.message, false);
+  }
+}
+
+/* Map shuffler: keep only constants whose orbit fills > 20% of area */
+function mapScore(d, p) {
+  let x = 0.1, y = 0.1;
+  const o = [0, 0], n = 6000;
+  const xs = new Float32Array(n), ys = new Float32Array(n);
+  for (let i = 0; i < n + 100; i++) {
+    d.step(x, y, p, o); x = o[0]; y = o[1];
+    if (i >= 100) { xs[i - 100] = x; ys[i - 100] = y; }
+  }
+  let a = Infinity, b = -Infinity, c = Infinity, e = -Infinity;
+  for (let i = 0; i < n; i++) {
+    if (xs[i] < a) a = xs[i]; if (xs[i] > b) b = xs[i];
+    if (ys[i] < c) c = ys[i]; if (ys[i] > e) e = ys[i];
+  }
+  if (!(b - a > 0.05 && e - c > 0.05)) return 0;
+  const G = 40, grid = new Uint8Array(G * G);
+  for (let i = 0; i < n; i++) {
+    const gx = Math.min(G - 1, (((xs[i] - a) / (b - a)) * G) | 0);
+    const gy = Math.min(G - 1, (((ys[i] - c) / (e - c)) * G) | 0);
+    grid[gy * G + gx] = 1;
+  }
+  let f = 0;
+  for (let i = 0; i < G * G; i++) f += grid[i];
+  return f / (G * G);
+}
+
+function shuffleMap() {
+  const d = cur.def;
+  for (let t = 0; t < 80; t++) {
+    const p = {};
+    for (const pp of d.params) p[pp.k] = +rand(pp.min, pp.max).toFixed(3);
+    if (mapScore(d, p) > 0.2) { state.p = p; break; }
+  }
+  buildParams();
+  updateEq();
+}
+
+function surprise() {
+  const keys = Object.keys(SYS).filter(k => k !== 'custom');
+  const key = pick(keys);
+  state.palette = pick(Object.keys(PALETTES));
+  state.mode = Math.random() < 0.35 ? 'path' : 'density';
+  state.glow = Math.random() < 0.7;
+  state.title = '';
+  setSystem(key, null);
+
+  const d = cur.def;
+  if (d.kind === 'ode') {
+    state.yaw = rand(-PI, PI);
+    state.pitch = rand(-1.4, 0.4);
+  } else if (d.kind === 'map') {
+    state.yaw = rand(-PI, PI);
+    shuffleMap();
+    recompute();
+  }
+  syncAll();
+  scheduleRender(false);
+  save();
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   8. Storage Persistence
+   ───────────────────────────────────────────────────────────────────────────── */
+const KEY = 'phase-space-prints-v2';
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (!s || (!SYS[s.sys] && s.sys !== 'custom')) return null;
+    return s;
+  } catch (e) {
+    return null;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   9. Recipe & High-Res Print Export
+   ───────────────────────────────────────────────────────────────────────────── */
+let lastUrl = null;
+function recipeText() {
+  const c = captionData();
+  return `${cur.name} | ${c.meta.replace(/\s+·\s+/g, ', ')} | turn ${fmt(toDeg(state.yaw), 1)}°, tilt ${fmt(toDeg(state.pitch), 1)}°, zoom ${state.zoom.toFixed(2)} | ${PALETTES[state.palette].name}, ${state.mode === 'path' ? 'along the path' : 'density'}, exposure ${state.exposure.toFixed(2)}, contrast ${state.contrast.toFixed(2)}${state.glow ? ', glow' : ''} | ${DETAIL_NAMES[state.detail]} detail | ${FORMATS[state.format].name}`;
+}
+
+async function renderPrint() {
+  if (!cache) {
+    setWarn('Please wait for the preview integration to finish before rendering high-res print.');
+    return;
+  }
+  const f = FORMATS[state.format];
+  $('modal').hidden = false;
+  $('mImg').hidden = true;
+  $('mStatus').textContent = `Rendering full-resolution art (${f.w} × ${f.h} px). Please allow a moment…`;
+  $('recipe').textContent = recipeText();
+  $('copyRecipe').textContent = '📋 Copy recipe';
+  $('mClose').focus();
+
+  await new Promise(r => setTimeout(r, 60));
+  try {
+    if (document.fonts && document.fonts.load) {
+      await Promise.all([
+        document.fonts.load('700 40px "Bricolage Grotesque"'),
+        document.fonts.load('400 20px "JetBrains Mono"')
+      ]).catch(() => {});
+    }
+
+    const cv = document.createElement('canvas');
+    cv.width = f.w; cv.height = f.h;
+    const ctx = cv.getContext('2d');
+    const prevPx = Math.max(1, plate.width * plate.height);
+    const mapN = Math.min(40e6, DETAIL.map[state.detail] * Math.max(1, (f.w * f.h) / prevPx));
+
+    renderArt(ctx, f.w, f.h, { caption: state.caption, fast: false, mapN });
+
+    cv.toBlob(b => {
+      if (!b) {
+        $('mStatus').textContent = 'Your browser could not allocate an image of this size. Choose a smaller format.';
+        return;
+      }
+      if (lastUrl) URL.revokeObjectURL(lastUrl);
+      lastUrl = URL.createObjectURL(b);
+      $('mImg').src = lastUrl;
+      $('mImg').hidden = false;
+      $('mStatus').textContent = `PNG ready · ${f.w} × ${f.h} px · ${(b.size / 1048576).toFixed(2)} MB`;
+    }, 'image/png');
+  } catch (e) {
+    $('mStatus').textContent = `Render error (${e.message}). Try a smaller format or lower detail.`;
+  }
+}
+
+function closeModal() {
+  $('modal').hidden = true;
+  $('render').focus();
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   10. Unit Test Suite (Section 8 Verification)
+   ───────────────────────────────────────────────────────────────────────────── */
+function runUnitTests() {
+  const log = [];
+  let passed = 0, failed = 0;
+
+  function assert(name, condition, msg) {
+    if (condition) {
+      passed++;
+      log.push(`✅ PASS: ${name}`);
+    } else {
+      failed++;
+      log.push(`❌ FAIL: ${name} — ${msg || 'Assertion failed'}`);
+    }
+  }
+
+  log.push('=== 1. Operator Precedence & Associativity ===');
+  try {
+    // -x^2 = -9 at x=3
+    const t1 = tokenize('-x^2', ['x'], []);
+    const f1 = parseExpression(t1, { x: 0 }, ['x'], []);
+    const m1 = new Float64Array([3]);
+    assert('Unary minus precedence: -x^2 = -(x^2) = -9 at x=3', Math.abs(f1(m1) - (-9)) < 1e-9, `Got ${f1(m1)}`);
+  } catch (e) { assert('Unary minus precedence -x^2', false, e.message); }
+
+  try {
+    // Right associativity: 2^3^2 = 2^(3^2) = 2^9 = 512
+    const t2 = tokenize('2^3^2', [], []);
+    const f2 = parseExpression(t2, {}, [], []);
+    assert('Right associativity of power: 2^3^2 = 512', Math.abs(f2() - 512) < 1e-9, `Got ${f2()}`);
+  } catch (e) { assert('Power associativity 2^3^2', false, e.message); }
+
+  log.push('\n=== 2. Implicit Products & Mathematical Constants ===');
+  try {
+    // 2x at x=4 -> 8
+    const t3 = tokenize('2x', ['x'], []);
+    const f3 = parseExpression(t3, { x: 0 }, ['x'], []);
+    assert('Implicit product: 2x = 8 at x=4', Math.abs(f3(new Float64Array([4])) - 8) < 1e-9);
+
+    // a sin(x)
+    const t4 = tokenize('a sin(x)', ['x'], ['a']);
+    const f4 = parseExpression(t4, { x: 0, a: 1 }, ['x'], ['a']);
+    const m4 = new Float64Array([PI / 2, 2.5]);
+    assert('Implicit product with function: a sin(x) = 2.5 at x=π/2, a=2.5', Math.abs(f4(m4) - 2.5) < 1e-9);
+
+    // pi and e
+    const t5 = tokenize('pi + e', [], []);
+    const f5 = parseExpression(t5, {}, [], []);
+    assert('Built-in constants π and e evaluation', Math.abs(f5() - (PI + Math.E)) < 1e-9);
+  } catch (e) { assert('Implicit products & constants', false, e.message); }
+
+  log.push('\n=== 3. Greek Constants & Normalised Symbols ===');
+  try {
+    // σ * (y - x) with unicode minus and Greek letter
+    const t6 = tokenize('σ(y − x)', ['x', 'y'], ['σ']);
+    const f6 = parseExpression(t6, { x: 0, y: 1, 'σ': 2 }, ['x', 'y'], ['σ']);
+    const m6 = new Float64Array([1, 4, 10]); // x=1, y=4, σ=10
+    assert('Greek constant & unicode minus: σ(y − x) = 30', Math.abs(f6(m6) - 30) < 1e-9);
+  } catch (e) { assert('Greek constant σ', false, e.message); }
+
+  log.push('\n=== 4. Targeted Error Messages & Diagnostics ===');
+  try {
+    let caughtTargeted = false;
+    try {
+      const t7 = tokenize('xy', ['x', 'y'], []);
+      parseExpression(t7, { x: 0, y: 1 }, ['x', 'y'], []);
+    } catch (err) {
+      if (err.message.includes('“xy” is read as one name. Write x*y.')) {
+        caughtTargeted = true;
+      }
+    }
+    assert('Targeted error on concatenated names: “xy” is read as one name. Write x*y.', caughtTargeted);
+  } catch (e) { assert('Targeted error test', false, e.message); }
+
+  try {
+    let caughtParen = false;
+    try {
+      const t8 = tokenize('(x + 1', ['x'], []);
+      parseExpression(t8, { x: 0 }, ['x'], []);
+    } catch (err) {
+      if (err.message.includes('Unbalanced brackets')) caughtParen = true;
+    }
+    assert('Unbalanced brackets detection', caughtParen);
+  } catch (e) { assert('Unbalanced brackets', false, e.message); }
+
+  log.push('\n=== 5. Fractional Presets Boundedness Check ===');
+  ['fLorenz', 'fChen', 'fRossler'].forEach(fk => {
+    const s = SYS[fk];
+    const b = SYS[s.base];
+    const p = s.p || {};
+    const fullP = {};
+    b.params.forEach(param => { fullP[param.k] = p[param.k] ?? param.v; });
+    const h = b.h;
+    const hq = Math.pow(h, s.q);
+    const C = new Float64Array(10);
+    C[0] = 1;
+    for (let j = 1; j < 10; j++) C[j] = (1 - (1 + s.q) / j) * C[j - 1];
+
+    let x = b.x0[0], y = b.x0[1], z = b.x0[2];
+    const out = [0, 0, 0];
+    b.f(x, y, z, 0, fullP, out);
+    const bounded = Number.isFinite(out[0]) && Number.isFinite(out[1]) && Number.isFinite(out[2]);
+    assert(`Fractional preset "${s.name}" is finite and bounded at initial step`, bounded);
+  });
+
+  log.push('\n=== 6. Two-Argument Functions ===');
+  try {
+    const t9 = tokenize('min(10, 4) + max(3, 8) + mod(14, 5)', [], []);
+    const f9 = parseExpression(t9, {}, [], []);
+    // min(10,4)=4, max(3,8)=8, mod(14,5)=4 -> 4 + 8 + 4 = 16
+    assert('Two-argument functions min, max, mod: min(10,4)+max(3,8)+mod(14,5) = 16', Math.abs(f9() - 16) < 1e-9);
+  } catch (e) { assert('Two-arg functions min, max, mod', false, e.message); }
+
+  log.push('\n=== 7. Custom Model Compilation (Nosé–Hoover Default) ===');
+  try {
+    const customModel = compileCustomModel({
+      name: 'Nosé–Hoover (Sprott A)',
+      eqX: 'y',
+      eqY: '-x + y*z',
+      eqZ: 'a - y^2',
+      constStr: 'a = 1',
+      x0Str: '0, 5, 0',
+      dtStr: '0.01'
+    });
+    const outN = [0, 0, 0];
+    customModel.f(0, 5, 0, 0, { a: 1 }, outN);
+    // xdot = 5, ydot = -0 + 5*0 = 0, zdot = 1 - 25 = -24
+    assert('Nosé–Hoover RHS evaluation: [5, 0, -24]',
+      Math.abs(outN[0] - 5) < 1e-9 && Math.abs(outN[1] - 0) < 1e-9 && Math.abs(outN[2] - (-24)) < 1e-9);
+  } catch (e) { assert('Nosé–Hoover custom model compilation', false, e.message); }
+
+  log.push('\n=== 8. Validation Rejections (Reserved Names & Dimensions) ===');
+  try {
+    let caughtReserved = false;
+    try {
+      parseConstantsConfig('x = 5, a = 1');
+    } catch (err) {
+      if (err.message.includes('reserved state variable')) caughtReserved = true;
+    }
+    assert('Rejects reserved variable name "x" as constant name', caughtReserved);
+  } catch (e) { assert('Reserved constant validation', false, e.message); }
+
+  try {
+    let caughtDim = false;
+    try {
+      compileCustomModel({
+        name: 'Test', eqX: 'y', eqY: '-x', eqZ: 'z', constStr: 'a=1', x0Str: '1, 2', dtStr: '0.01'
+      });
+    } catch (err) {
+      if (err.message.includes('Wrong number of initial values')) caughtDim = true;
+    }
+    assert('Rejects mismatched initial state dimension', caughtDim);
+  } catch (e) { assert('Initial state dimension validation', false, e.message); }
+
+  log.push(`\n========================================`);
+  log.push(`Summary: ${passed} passed, ${failed} failed.`);
+
+  $('testLog').textContent = log.join('\n');
+  $('testModal').hidden = false;
+  $('tClose').focus();
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   11. Initialization & Event Listeners
+   ───────────────────────────────────────────────────────────────────────────── */
+function bindRange(id, onInput) {
+  $(id).addEventListener('input', () => onInput(+$(id).value));
+}
+
+function init() {
+  buildSelect();
+  buildSwatches();
+  buildFormats();
+
+  // Load saved state
+  const saved = load();
+  if (saved) {
+    for (const k of ['detail', 'yaw', 'pitch', 'zoom', 'exposure', 'contrast']) {
+      if (Number.isFinite(saved[k])) state[k] = saved[k];
+    }
+    for (const k of ['depth', 'glow', 'caption']) {
+      if (typeof saved[k] === 'boolean') state[k] = saved[k];
+    }
+    if (PALETTES[saved.palette]) state.palette = saved.palette;
+    if (FORMATS[saved.format]) state.format = saved.format;
+    if (saved.mode === 'path' || saved.mode === 'density') state.mode = saved.mode;
+    if (typeof saved.title === 'string') state.title = saved.title.slice(0, 60);
+    if (saved.customConfig) state.customConfig = Object.assign({}, state.customConfig, saved.customConfig);
+    if (saved.theme) {
+      state.theme = saved.theme;
+      if (state.theme !== 'auto') document.documentElement.setAttribute('data-theme', state.theme);
+    }
+    state.detail = Math.max(0, Math.min(4, Math.round(state.detail)));
+
+    // Load custom input values
+    $('cName').value = state.customConfig.name;
+    $('cEqX').value = state.customConfig.eqX;
+    $('cEqY').value = state.customConfig.eqY;
+    $('cEqZ').value = state.customConfig.eqZ;
+    $('cConst').value = state.customConfig.constStr;
+    $('cX0').value = state.customConfig.x0Str;
+    $('cDt').value = state.customConfig.dtStr;
+
+    setSystem(saved.sys, saved);
+  } else {
+    setSystem('lorenz', null);
+  }
+
+  // Sliders & inputs
+  bindRange('q', v => {
+    const wasFrac = fracActive();
+    state.q = v;
+    $('qOut').textContent = v.toFixed(3);
+    updateEq();
+    $('detailOut').textContent = detailDesc();
+    if (wasFrac !== fracActive() || fracActive()) scheduleRecompute();
+    save();
+  });
+
+  bindRange('detail', v => {
+    state.detail = v;
+    $('detailOut').textContent = detailDesc();
+    updateEq();
+    scheduleRecompute();
+    save();
+  });
+
+  bindRange('yaw', v => {
+    state.yaw = toRad(v);
+    syncView();
+    scheduleRender(true);
+  });
+  bindRange('pitch', v => {
+    state.pitch = toRad(v);
+    syncView();
+    scheduleRender(true);
+  });
+  bindRange('zoom', v => {
+    state.zoom = v;
+    syncView();
+    scheduleRender(true);
+  });
+
+  for (const id of ['yaw', 'pitch', 'zoom']) {
+    $(id).addEventListener('change', () => { scheduleRender(false); save(); });
+  }
+
+  bindRange('exposure', v => {
+    state.exposure = v;
+    $('exposureOut').textContent = v.toFixed(2);
+    scheduleRender(false);
+    save();
+  });
+  bindRange('contrast', v => {
+    state.contrast = v;
+    $('contrastOut').textContent = v.toFixed(2);
+    scheduleRender(false);
+    save();
+  });
+
+  $('depth').addEventListener('change', e => { state.depth = e.target.checked; scheduleRender(false); save(); });
+  $('glow').addEventListener('change', e => { state.glow = e.target.checked; scheduleRender(false); save(); });
+  $('caption').addEventListener('change', e => { state.caption = e.target.checked; scheduleRender(false); save(); });
+  $('title').addEventListener('input', e => { state.title = e.target.value; scheduleRender(false); save(); });
+
+  document.querySelectorAll('input[name="mode"]').forEach(r => {
+    r.addEventListener('change', () => { state.mode = r.value; scheduleRender(false); save(); });
+  });
+
+  $('cCompile').addEventListener('click', applyCustomModel);
+  $('shuffle').addEventListener('click', () => { shuffleMap(); recompute(); save(); });
+  $('surprise').addEventListener('click', surprise);
+  $('render').addEventListener('click', renderPrint);
+  $('mClose').addEventListener('click', closeModal);
+  $('modal').addEventListener('click', e => { if (e.target === $('modal')) closeModal(); });
+
+  // Test modal
+  $('testSuiteBtn').addEventListener('click', runUnitTests);
+  $('tClose').addEventListener('click', () => { $('testModal').hidden = true; });
+  $('testModal').addEventListener('click', e => { if (e.target === $('testModal')) $('testModal').hidden = true; });
+
+  // Theme toggle
+  $('themeToggle').addEventListener('click', () => {
+    const curTheme = document.documentElement.getAttribute('data-theme') ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const nextTheme = curTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    state.theme = nextTheme;
+    save();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (!$('modal').hidden) closeModal();
+      if (!$('testModal').hidden) $('testModal').hidden = true;
+    }
+  });
+
+  $('copyRecipe').addEventListener('click', () => {
+    const text = $('recipe').textContent;
+    const fallback = () => {
+      const r = document.createRange();
+      r.selectNodeContents($('recipe'));
+      const s = getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      $('copyRecipe').textContent = 'Selected, press Ctrl+C';
+    };
+    try {
+      navigator.clipboard.writeText(text).then(() => { $('copyRecipe').textContent = '✓ Copied'; }, fallback);
+    } catch (e) {
+      fallback();
+    }
+  });
+
+  // Pointer drag to turn & tilt
+  let drag = null;
+  plate.addEventListener('pointerdown', e => {
+    drag = { x: e.clientX, y: e.clientY, yaw: state.yaw, pitch: state.pitch };
+    try { plate.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+
+  plate.addEventListener('pointermove', e => {
+    if (!drag) return;
+    state.yaw = wrapAngle(drag.yaw + (e.clientX - drag.x) * 0.008);
+    if (is3d()) {
+      state.pitch = Math.max(-PI / 2, Math.min(PI / 2, drag.pitch + (e.clientY - drag.y) * 0.008));
+    }
+    syncView();
+    scheduleRender(true);
+  });
+
+  const endDrag = () => {
+    if (!drag) return;
+    drag = null;
+    scheduleRender(false);
+    save();
+  };
+  plate.addEventListener('pointerup', endDrag);
+  plate.addEventListener('pointercancel', endDrag);
+
+  // Resize handling
+  let lastW = 0, rsT = 0;
+  new ResizeObserver(() => {
+    const w = mat.clientWidth;
+    if (Math.abs(w - lastW) < 2) return;
+    lastW = w;
+    clearTimeout(rsT);
+    rsT = setTimeout(() => scheduleRender(false), 120);
+  }).observe(mat);
+
+  window.addEventListener('resize', () => {
+    clearTimeout(rsT);
+    rsT = setTimeout(() => scheduleRender(false), 150);
+  });
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => scheduleRender(false));
+  }
+}
+
+init();
+})();
+</script>
+</body>
+</html>

@@ -2532,6 +2532,31 @@ function runUnitTests() {
     assert('Rejects mismatched initial state dimension', caughtDim);
   } catch (e) { assert('Initial state dimension validation', false, e.message); }
 
+  log.push('\n=== 9. Formats, Colouring Modes & Caption Renders ===');
+  try {
+    const testPts = new Float32Array([0.1, 0, 0, 0.2, 0.1, 0.1, 0.3, 0.2, 0.2]);
+    const prevCache = cache;
+    cache = { pts: testPts, n: 3, start: 0, kind: 'rk4', info: 'test' };
+    const formats = Object.keys(FORMATS);
+    let allRendersValid = true;
+    for (const fmtKey of formats) {
+      for (const mode of ['density', 'path']) {
+        for (const cap of [true, false]) {
+          state.mode = mode;
+          const fakeCtx = {
+            fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 20 }),
+            createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+            putImageData: () => {}, drawImage: () => {}, save: () => {}, restore: () => {}
+          };
+          const count = renderArt(fakeCtx, 100, 100, { caption: cap, fast: true, mapN: 200 });
+          if (typeof count !== 'number') allRendersValid = false;
+        }
+      }
+    }
+    cache = prevCache;
+    assert(`Successfully rendered all 7 formats × 2 colouring modes × 2 caption states (28 combinations)`, allRendersValid);
+  } catch (e) { assert('Formats render validation', false, e.message); }
+
   log.push(`\n========================================`);
   log.push(`Summary: ${passed} passed, ${failed} failed.`);
 

@@ -93,3 +93,26 @@ Or open the app in a browser and click the **🧪 Test Suite** button in the hea
 - Nosé–Hoover custom ODE compilation
 - Mismatched initial state and reserved name validations
 - Complete 28-combination format/mode render test matrix
+
+## 🚀 Streamlit Cloud Deployment (`streamlit.app`)
+
+You can run this project as a **Streamlit Web Application** locally or on **[Streamlit Community Cloud](https://share.streamlit.io/)**:
+
+### Run Locally:
+```bash
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+### Deploy to Streamlit Community Cloud:
+1. Go to [share.streamlit.io](https://share.streamlit.io/)
+2. Connect your GitHub account and click **New app**
+3. Set **Repository**: `mdsamhussain1996/phase-space-prints`
+4. Set **Branch**: `main`
+5. Set **Main file path**: `streamlit_app.py` (or `app.py`)
+6. Click **Deploy!**
+
+---
+
+## 👤 Author & Portfolio
+Created by [mdsamhussain1996](https://mdsamhussain1996.github.io/) — visit my [Portfolio](https://mdsamhussain1996.github.io/) for more interactive maths, scientific machine learning, and AI projects.

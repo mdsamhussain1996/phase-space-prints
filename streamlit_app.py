@@ -141,8 +141,10 @@ if view_mode == "🎨 Generative Studio (Interactive)":
     # Read and embed the complete self-contained index.html
     html_path = Path(__file__).parent / "index.html"
     if html_path.exists():
-        html_code = html_path.read_text(encoding="utf-8")
-        components.html(html_code, height=920, scrolling=True)
+        if hasattr(st, "iframe"):
+            st.iframe(html_path, height=920)
+        else:
+            components.html(html_path.read_text(encoding="utf-8"), height=920, scrolling=True)
     else:
         st.error("index.html not found in project directory.")
 

@@ -68,38 +68,38 @@ Phase Space Prints is a standalone, self-contained single-page web app built wit
 
 ---
 
-### 4. ✨ "Glowing Path" Trace Animation
-- **Progressive Trajectory Drawing**: Renders the orbit dynamically from its true initial condition $(x_0, y_0, z_0)$.
-- **Luminous Comet Tail & Head**:
-  - Trailing fading tail (1–15% orbit length) rendered with additive/multiply blending and depth shading.
-  - Glowing radial head sprite pulsing gently at 1.5 Hz.
-  - Initial state launch ring indicator fading over the first second.
-- **Controls & Performance**:
-  - Duration range: 4–60 s with ease-in-out time curves.
-  - Offscreen canvas accumulator (`trailCanvas`) capped at 40k points/frame for stable 60 fps rendering on mobile devices and desktop.
-  - Auto-pauses during drag-to-turn/tilt interaction and resumes after 400 ms.
-  - Spacebar = Play/Pause, `R` = Restart (when not focused in inputs).
-  - Respects `prefers-reduced-motion` settings.
+### 4. ✨ "Light from the Source" Glow Animation
+- **Light Source Selection**:
+  - **Initial point $x_0$** (default orbit departure).
+  - **Fixed point (equilibrium)**: Trajectory is born at an equilibrium $x^*$ and departs along its unstable manifold $x^* + \varepsilon v$ ($\varepsilon \approx 10^{-4} \cdot \text{scale}$). If the chosen point is stable, starts with a gentle kick.
+  - **Equilibria Solver**:
+    - Continuous 3D ODEs & custom models: Solves $f(x)=0$ with damped Newton's method using a finite-difference Jacobian, seeded from $x_0$, the origin, analytic formulas (Lorenz & Chen), and random points across the attractor's bounding box.
+    - 2-D maps: Fixed points of $F(x) - x = 0$ via 2D Newton.
+    - Closed-form 3×3 cubic characteristic polynomial solver (Cardano/Viète) classifying equilibria as *saddle*, *saddle-focus*, *unstable focus*, *unstable node*, *stable node*, or *stable focus*.
+  - **Pulsing Source Indicator**: Concentric pulsing marker ring drawn at the chosen source point.
+- **Luminous Comet Glow Quality**:
+  - **Bloom Head**: Radial-gradient bloom with near-white core (`#ffffff`) and halo in the palette's brightest LUT colour, with organic micro-flicker.
+  - **Additive Blending Tail**: Exponential decay $\alpha(s) = \exp(-3.5(1-s))$ and width tapering with additive/multiply blending.
+  - **Burn-In Density Buffer**: Past trail deposits into the canvas buffer so that at $100\%$ progress the canvas seamlessly equals the static print (pixel diff = 0).
+  - **Hold Glow at End Point**: Optional toggle keeps the glowing head at the final state.
+  - **Mid-Animation Dragging**: Dragging to rotate (yaw/pitch) or zoom updates the projection smoothly in real time.
 
 ---
 
-### 5. 📱 Live Wallpaper & Video Export
-- **A. Full-Screen Ambient Live Mode**:
-  - Fullscreen display (with safe-area inset support on iOS and devices with notches).
-  - Screen Wake Lock (`navigator.wakeLock`) prevents screen dimming during display.
-  - Smooth 360° auto-rotation with gentle $\pm 8^\circ$ pitch wobble and 6-second breathing exposure oscillation.
-  - Tap once to display exit hint; double-tap or Esc to return to the editor.
-  - **Shareable Live URL**: `?live=1&sys=lorenz&palette=nebula&mode=path&yaw=30&pitch=-20&zoom=1.1&rot=90&trace=1` opens straight into live mode.
-- **Desktop Setup**:
-  - **Windows**: In [Lively Wallpaper](https://rocksdanister.github.io/lively/) (free), click *Add Wallpaper* and paste the shareable live link.
-  - **macOS**: In [Plash](https://github.com/sindresorhus/Plash) (free), add the live link as a website wallpaper.
+### 5. 🔴 Live Mode & Wallpaper Integration
+- **Endless Live Mode**:
+  - Integrates on the fly (RK4, Grünwald–Letnikov fractional, discrete map iterations) at user-configured speed (100–4000 steps/sec).
+  - **Dissipative Trail Decay**: Trail decay slider ($0$ to $0.10$) gently dissipates older density so the attractor "breathes" without saturating.
+  - **Bounded Memory Safety**: Tail uses a fixed $4000 \times 3$ circular ring buffer ($O(1)$ memory). Fractional GL history stays strictly capped at $L=1000$.
+  - **Divergence Detection**: Gracefully detects unbounded escape ($|x| + |y| + |z| > 10^6$), prompts with a warning, and offers restart from source.
+  - **Background Pause**: Automatically pauses when the browser tab is hidden (`visibilitychange`) and resumes upon return.
+- **A. Full-Screen Ambient Live Wallpaper**:
+  - Fullscreen display with Screen Wake Lock (`navigator.wakeLock`).
+  - Auto-rotation with pitch wobble and breathing exposure.
+  - **Shareable Live URL**: Restores entire configuration from query parameters:
+    `?sys=lorenz&live=1&from=fixed&eq=1&speed=800&decay=0.02&holdend=1&palette=nebula&mode=path&yaw=30&pitch=-20&zoom=1.1`
 - **B. Looping Video Export**:
-  - Exports seamless looping video in **Phone** ($1080 \times 2340$), **Desktop** ($1920 \times 1080$), or **Square** ($1080 \times 1080$).
-  - Captures offscreen canvas stream at 30 fps via `MediaRecorder` preferring MP4 (H.264 / `video/mp4;codecs=avc1`), falling back to VP9/VP8 WebM at 12 Mbps.
-  - Generates matching still lock-screen PNGs.
-- **Mobile Setup**:
-  - **Android**: Use a video live wallpaper app (such as *Video Live Wallpaper*) with the downloaded MP4.
-  - **iOS**: Convert the MP4 to a Live Photo with a free converter (such as *intoLive*) and select it in *Settings → Wallpaper*.
+  - Records live or precomputed animations in Phone ($1080 \times 2340$), Desktop ($1920 \times 1080$), or Square ($1080 \times 1080$) at 30 fps via `MediaRecorder` (H.264 MP4 / WebM).
 
 ---
 
@@ -117,7 +117,24 @@ Run the built-in test suite in Node.js:
 ```bash
 node test_runner.js
 ```
-Or open the app in a browser and click the **🧪 Test Suite** button in the header. All 36 automated unit tests verify:
+Or open the app in a browser and click the **🧪 Test Suite** button in the header. All 57 automated unit tests verify:
+- Operator precedence: $-x^2 = -9$ at $x=3$
+- Power right-associativity: $2^{3^2} = 512$
+- Implicit products and constants ($\pi, e$)
+- Greek constant symbol normalization ($\sigma, \rho$)
+- Targeted error messages and unbalanced brackets
+- Fractional preset boundedness
+- Two-argument functions
+- Nosé–Hoover custom ODE compilation
+- Mismatched initial state and reserved name validations
+- Complete 28-combination format/mode render test matrix
+- View projection & deterministic rendering
+- Lorenz equilibria found by Newton matching analytic three points within $10^{-6}$
+- 3×3 Eigen-classification: Lorenz origin classified as saddle; Clifford & De Jong fixed points $|F(x^*) - x^*| < 10^{-9}$
+- Unstable manifold departure distance growth over 200 RK4 steps
+- Live mode circular ring buffer invariance ($12000$ floats after 100k steps) & fractional GL memory cap $\le L$
+- Full URL parameter round-trip with `from`, `eq`, `speed`, `decay`, `holdend`, `live`
+- Final frame of non-live trace matching static print render (diff = 0)
 - Operator precedence: $-x^2 = -9$ at $x=3$
 - Power right-associativity: $2^{3^2} = 512$
 - Implicit products and constants ($\pi, e$)

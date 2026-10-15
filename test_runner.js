@@ -85,17 +85,48 @@ const sandbox = {
 
 const context = vm.createContext(sandbox);
 
-// Expose runUnitTests
-const modifiedScript = scriptText.replace('init();', 'globalThis.runUnitTests = runUnitTests; init();');
+// Expose runUnitTests and helpers
+const modifiedScript = scriptText.replace(
+  'init();',
+  'globalThis.runUnitTests = runUnitTests; globalThis.getEquilibria = getEquilibria; globalThis.SYS = SYS; globalThis.initLiveSim = initLiveSim; globalThis.stepLiveSim = stepLiveSim; globalThis.computeJacobian3D = computeJacobian3D; globalThis.classifyJacobian3D = classifyJacobian3D; init();'
+);
 vm.runInContext(modifiedScript, context);
 
 vm.runInContext('runUnitTests();', context);
 
+// Verify in-page test suite output
 console.log(testLogElem.textContent);
 
 if (testLogElem.textContent.includes('FAIL:')) {
-  console.error('\n❌ Test failures detected!');
+  console.error('\n❌ Test failures detected in in-page test suite!');
   process.exit(1);
-} else {
-  console.log('\n✨ ALL TESTS PASSED SUCCESSFULLY! ✨');
 }
+
+// Standalone Direct Node Assertions
+console.log('\n=== Additional Direct Node Invariants ===');
+vm.runInContext(`
+  // 1. Lorenz equilibria within 1e-6
+  const lorenzEqs = getEquilibria(true);
+  if (lorenzEqs.length !== 3) throw new Error('Expected 3 Lorenz equilibria');
+  const cVal = Math.sqrt((8/3) * (28 - 1));
+  const expectedPts = [[0,0,0], [cVal, cVal, 27], [-cVal, -cVal, 27]];
+  for (const exp of expectedPts) {
+    const found = lorenzEqs.some(e => Math.hypot(e.point[0] - exp[0], e.point[1] - exp[1], e.point[2] - exp[2]) < 1e-6);
+    if (!found) throw new Error('Missing expected Lorenz equilibrium: ' + JSON.stringify(exp));
+  }
+  console.log('✅ PASS: Direct Lorenz 3-equilibria invariant verified (< 1e-6)');
+
+  // 2. Unstable departure
+  const J0 = computeJacobian3D(SYS.lorenz.f, 0, 0, 0, { s: 10, r: 28, b: 8/3 });
+  const cl0 = classifyJacobian3D(J0);
+  if (cl0.type !== 'saddle') throw new Error('Expected saddle at Lorenz origin');
+  console.log('✅ PASS: Direct eigen-classification invariant verified (saddle)');
+
+  // 3. Ring buffer bounded capacity
+  const liveTestSim = initLiveSim();
+  stepLiveSim(liveTestSim, 50000);
+  if (liveTestSim.tailBuffer.length !== 12000) throw new Error('Ring buffer size altered');
+  console.log('✅ PASS: Direct ring buffer bounded size verified (12000 floats)');
+`, context);
+
+console.log('\n✨ ALL TESTS PASSED SUCCESSFULLY! ✨');

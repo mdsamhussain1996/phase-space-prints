@@ -735,7 +735,39 @@ input[type="range"] {
             </div>
             <input type="range" id="traceHead" min="0" max="2" step="0.1" value="1">
           </div>
-          <label class="check" style="margin-bottom:8px;"><input type="checkbox" id="traceLoop" checked> Loop</label>
+          <div class="ctl" id="traceSourceBox" style="margin-top:6px;">
+            <div class="ctl-head">
+              <label for="traceSource">Light source</label>
+            </div>
+            <select id="traceSource" style="width:100%;padding:6px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--line);font-family:inherit;font-size:0.85rem;">
+              <option value="init" selected>Initial point x₀</option>
+              <option value="fixed">Fixed point (equilibrium)</option>
+            </select>
+          </div>
+          <div id="traceEquilBox" hidden style="margin-top:6px;padding:8px 10px;background:var(--bg-subtle, rgba(0,0,0,0.2));border-radius:6px;border:1px solid var(--line);">
+            <label for="traceEquilSel" style="font-size:0.78rem;display:block;margin-bottom:4px;color:var(--muted);font-weight:600;">Equilibrium departure</label>
+            <select id="traceEquilSel" style="width:100%;padding:5px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--line);font-family:inherit;font-size:0.8rem;"></select>
+            <div id="traceEquilNote" style="margin-top:5px;font-size:0.75rem;color:var(--accent);line-height:1.35;" hidden></div>
+          </div>
+          <label class="check" style="margin-top:6px;"><input type="checkbox" id="traceHoldEnd"> Hold glow at end point</label>
+          <label class="check" style="margin-top:6px;font-weight:600;"><input type="checkbox" id="traceLive"> 🔴 Live (never ends)</label>
+          <div id="traceLiveBox" hidden style="margin-top:6px;padding:8px 10px;background:var(--bg-subtle, rgba(0,0,0,0.2));border-radius:6px;border:1px solid var(--line);">
+            <div class="ctl">
+              <div class="ctl-head">
+                <label for="traceSpeed">Speed</label>
+                <output id="traceSpeedOut" for="traceSpeed">800 steps/s</output>
+              </div>
+              <input type="range" id="traceSpeed" min="100" max="4000" step="50" value="800">
+            </div>
+            <div class="ctl" style="margin-top:6px;">
+              <div class="ctl-head">
+                <label for="traceDecay">Trail decay</label>
+                <output id="traceDecayOut" for="traceDecay">0.02</output>
+              </div>
+              <input type="range" id="traceDecay" min="0" max="0.1" step="0.005" value="0.02">
+            </div>
+          </div>
+          <label class="check" id="traceLoopWrap" style="margin-top:6px;margin-bottom:8px;"><input type="checkbox" id="traceLoop" checked> Loop</label>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-sm" id="tracePlay" type="button" aria-label="Play or pause trace animation">⏸ Pause</button>
             <button class="btn btn-sm" id="traceRestart" type="button" aria-label="Restart trace animation">↺ Restart</button>
@@ -808,6 +840,15 @@ input[type="range"] {
         <label class="check"><input type="checkbox" id="liveRot" checked> Slow auto-rotation</label>
         <label class="check"><input type="checkbox" id="liveBreathe" checked> Breathing exposure</label>
         <label class="check"><input type="checkbox" id="livePaletteDrift"> Palette drift</label>
+        <label class="check"><input type="checkbox" id="liveEndless"> 🔴 Live (endless)</label>
+      </div>
+
+      <div class="ctl" id="liveSourceBox" style="margin-bottom:12px;">
+        <label for="liveSource" style="display:block;margin-bottom:4px;font-size:0.86rem;">Light source</label>
+        <select id="liveSource" style="width:100%;padding:6px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--line);font-size:0.85rem;">
+          <option value="init" selected>Initial point x₀</option>
+          <option value="fixed">Fixed point (equilibrium)</option>
+        </select>
       </div>
 
       <div class="ctl" id="liveRotBox" style="margin-bottom:12px;">
@@ -1501,11 +1542,19 @@ const state = {
   traceTail: 4,
   traceHead: 1,
   traceLoop: true,
+  traceSource: 'init',
+  traceEquilIdx: 0,
+  traceHoldEnd: false,
+  traceLive: false,
+  traceSpeed: 800,
+  traceDecay: 0.02,
   liveTrace: true,
   liveRot: true,
   liveRotPeriod: 90,
   liveBreathe: true,
   livePaletteDrift: false,
+  liveEndless: false,
+  liveSource: 'init',
   customConfig: {
     name: 'Nosé–Hoover (Sprott A)',
     eqX: 'y',
@@ -1586,6 +1635,439 @@ function lutFor(key) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   4b. Equilibria Finding, 3×3 Eigensolver & Stability Classification
+   ───────────────────────────────────────────────────────────────────────────── */
+function solveCubic(a2, a1, a0) {
+  const p = a1 - (a2 * a2) / 3;
+  const q = (2 * a2 * a2 * a2) / 27 - (a2 * a1) / 3 + a0;
+  const D = (q * q) / 4 + (p * p * p) / 27;
+  const shift = -a2 / 3;
+
+  if (D <= 1e-15) {
+    const r = 2 * Math.sqrt(Math.max(0, -p / 3));
+    const factor = Math.sqrt(Math.max(0, -(p * p * p) / 27));
+    const ratio = factor > 1e-14 ? Math.max(-1, Math.min(1, -(q / 2) / factor)) : 1;
+    const theta = Math.acos(ratio) / 3;
+    const PI23 = (2 * Math.PI) / 3;
+    return [
+      { r: r * Math.cos(theta) + shift, i: 0 },
+      { r: r * Math.cos(theta - PI23) + shift, i: 0 },
+      { r: r * Math.cos(theta - 2 * PI23) + shift, i: 0 }
+    ];
+  } else {
+    const u = Math.cbrt(-q / 2 + Math.sqrt(D));
+    const v = Math.cbrt(-q / 2 - Math.sqrt(D));
+    return [
+      { r: (u + v) + shift, i: 0 },
+      { r: -(u + v) / 2 + shift, i: (Math.sqrt(3) / 2) * (u - v) },
+      { r: -(u + v) / 2 + shift, i: -(Math.sqrt(3) / 2) * (u - v) }
+    ];
+  }
+}
+
+function computeJacobian3D(f, x, y, z, p) {
+  const eps = 1e-6 * Math.max(1, Math.max(Math.abs(x), Math.abs(y), Math.abs(z)));
+  const oP = [0, 0, 0], oM = [0, 0, 0];
+  const J = [ [0, 0, 0], [0, 0, 0], [0, 0, 0] ];
+
+  f(x + eps, y, z, 0, p, oP);
+  f(x - eps, y, z, 0, p, oM);
+  J[0][0] = (oP[0] - oM[0]) / (2 * eps);
+  J[1][0] = (oP[1] - oM[1]) / (2 * eps);
+  J[2][0] = (oP[2] - oM[2]) / (2 * eps);
+
+  f(x, y + eps, z, 0, p, oP);
+  f(x, y - eps, z, 0, p, oM);
+  J[0][1] = (oP[0] - oM[0]) / (2 * eps);
+  J[1][1] = (oP[1] - oM[1]) / (2 * eps);
+  J[2][1] = (oP[2] - oM[2]) / (2 * eps);
+
+  f(x, y, z + eps, 0, p, oP);
+  f(x, y, z - eps, 0, p, oM);
+  J[0][2] = (oP[0] - oM[0]) / (2 * eps);
+  J[1][2] = (oP[1] - oM[1]) / (2 * eps);
+  J[2][2] = (oP[2] - oM[2]) / (2 * eps);
+
+  return J;
+}
+
+function invert3x3(J) {
+  const A = J[0][0], B = J[0][1], C = J[0][2];
+  const D = J[1][0], E = J[1][1], G = J[1][2];
+  const H = J[2][0], K = J[2][1], L = J[2][2];
+  const det = A * (E * L - G * K) - B * (D * L - G * H) + C * (D * K - E * H);
+  if (Math.abs(det) < 1e-15) return null;
+  return [
+    [ (E * L - G * K) / det, -(B * L - C * K) / det,  (B * G - C * E) / det ],
+    [ -(D * L - G * H) / det, (A * L - C * H) / det, -(A * G - C * D) / det ],
+    [  (D * K - E * H) / det, -(A * K - B * H) / det,  (A * E - B * D) / det ]
+  ];
+}
+
+function newtonSolve3D(f, seed, p, maxIter = 50, tol = 1e-9) {
+  let [x, y, z] = seed;
+  const F = [0, 0, 0];
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    f(x, y, z, 0, p, F);
+    const err = Math.hypot(F[0], F[1], F[2]);
+    if (err < tol) return [x, y, z];
+
+    const J = computeJacobian3D(f, x, y, z, p);
+    const inv = invert3x3(J);
+    if (!inv) break;
+
+    const dx = -(inv[0][0] * F[0] + inv[0][1] * F[1] + inv[0][2] * F[2]);
+    const dy = -(inv[1][0] * F[0] + inv[1][1] * F[1] + inv[1][2] * F[2]);
+    const dz = -(inv[2][0] * F[0] + inv[2][1] * F[1] + inv[2][2] * F[2]);
+
+    if (!Number.isFinite(dx) || !Number.isFinite(dy) || !Number.isFinite(dz)) break;
+
+    let step = 1.0;
+    const testF = [0, 0, 0];
+    let accepted = false;
+    for (let ls = 0; ls < 5; ls++) {
+      f(x + step * dx, y + step * dy, z + step * dz, 0, p, testF);
+      const testErr = Math.hypot(testF[0], testF[1], testF[2]);
+      if (testErr < err || Math.hypot(dx, dy, dz) < tol) {
+        x += step * dx; y += step * dy; z += step * dz;
+        accepted = true;
+        break;
+      }
+      step *= 0.5;
+    }
+    if (!accepted) {
+      x += 0.1 * dx; y += 0.1 * dy; z += 0.1 * dz;
+    }
+    if (Math.hypot(dx, dy, dz) < tol && err < 1e-5) return [x, y, z];
+  }
+  f(x, y, z, 0, p, F);
+  if (Math.hypot(F[0], F[1], F[2]) < 1e-4) return [x, y, z];
+  return null;
+}
+
+function classifyJacobian3D(J) {
+  const tr = J[0][0] + J[1][1] + J[2][2];
+  const M = (J[0][0] * J[1][1] - J[0][1] * J[1][0]) +
+            (J[1][1] * J[2][2] - J[1][2] * J[2][1]) +
+            (J[0][0] * J[2][2] - J[0][2] * J[2][0]);
+  const A = J[0][0], B = J[0][1], C = J[0][2];
+  const D = J[1][0], E = J[1][1], G = J[1][2];
+  const H = J[2][0], K = J[2][1], L = J[2][2];
+  const det = A * (E * L - G * K) - B * (D * L - G * H) + C * (D * K - E * H);
+
+  const eigs = solveCubic(-tr, M, -det);
+  eigs.sort((a, b) => b.r - a.r);
+
+  const maxReal = eigs[0].r;
+  const minReal = eigs[eigs.length - 1].r;
+  const hasComplex = eigs.some(e => Math.abs(e.i) > 1e-6);
+
+  let type = '';
+  const isStable = maxReal <= 1e-6;
+
+  if (isStable) {
+    type = hasComplex ? 'stable focus' : 'stable node';
+  } else if (minReal > 1e-6) {
+    type = hasComplex ? 'unstable focus' : 'unstable node';
+  } else {
+    type = hasComplex ? 'saddle-focus' : 'saddle';
+  }
+
+  let unstableEig = eigs[0];
+  let v = [0, 0, 0];
+
+  if (!isStable) {
+    const lam = unstableEig.r;
+    const Mat = [
+      [J[0][0] - lam, J[0][1], J[0][2]],
+      [J[1][0], J[1][1] - lam, J[1][2]],
+      [J[2][0], J[2][1], J[2][2] - lam]
+    ];
+    const c01 = [
+      Mat[0][1] * Mat[1][2] - Mat[0][2] * Mat[1][1],
+      Mat[0][2] * Mat[1][0] - Mat[0][0] * Mat[1][2],
+      Mat[0][0] * Mat[1][1] - Mat[0][1] * Mat[1][0]
+    ];
+    const c12 = [
+      Mat[1][1] * Mat[2][2] - Mat[1][2] * Mat[2][1],
+      Mat[1][2] * Mat[2][0] - Mat[1][0] * Mat[2][2],
+      Mat[1][0] * Mat[2][1] - Mat[1][1] * Mat[2][0]
+    ];
+    const c02 = [
+      Mat[0][1] * Mat[2][2] - Mat[0][2] * Mat[2][1],
+      Mat[0][2] * Mat[2][0] - Mat[0][0] * Mat[2][2],
+      Mat[0][0] * Mat[2][1] - Mat[0][1] * Mat[2][0]
+    ];
+    const n01 = Math.hypot(...c01);
+    const n12 = Math.hypot(...c12);
+    const n02 = Math.hypot(...c02);
+    const maxN = Math.max(n01, n12, n02);
+
+    if (maxN > 1e-12) {
+      const best = (maxN === n01) ? c01 : (maxN === n12) ? c12 : c02;
+      v = [best[0] / maxN, best[1] / maxN, best[2] / maxN];
+    } else {
+      v = [1, 1, 1];
+      const len = Math.hypot(...v);
+      v = [v[0] / len, v[1] / len, v[2] / len];
+    }
+  } else {
+    const rx = Math.random() - 0.5, ry = Math.random() - 0.5, rz = Math.random() - 0.5;
+    const len = Math.hypot(rx, ry, rz) || 1;
+    v = [rx / len, ry / len, rz / len];
+  }
+
+  return { eigs, isStable, type, unstableEig, v };
+}
+
+function findFixedPointsMap(def, p) {
+  const pts = [];
+  const seeds = [
+    [0, 0], [0.1, 0.1], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5],
+    [1, 1], [-1, 1], [1, -1], [-1, -1], [1.5, 0], [0, 1.5]
+  ];
+  for (let i = 0; i < 20; i++) {
+    seeds.push([ (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4 ]);
+  }
+
+  const o = [0, 0], oX = [0, 0], oY = [0, 0];
+  const eps = 1e-6;
+
+  for (const s of seeds) {
+    let x = s[0], y = s[1];
+    let converged = false;
+
+    for (let iter = 0; iter < 45; iter++) {
+      def.step(x, y, p, o);
+      const gx = o[0] - x, gy = o[1] - y;
+      if (Math.hypot(gx, gy) < 1e-12) { converged = true; break; }
+
+      def.step(x + eps, y, p, oX);
+      def.step(x, y + eps, p, oY);
+
+      const J00 = (oX[0] - o[0]) / eps - 1;
+      const J01 = (oY[0] - o[0]) / eps;
+      const J10 = (oX[1] - o[1]) / eps;
+      const J11 = (oY[1] - o[1]) / eps - 1;
+
+      const det = J00 * J11 - J01 * J10;
+      if (Math.abs(det) < 1e-15) break;
+
+      const dx = -(J11 * gx - J01 * gy) / det;
+      const dy = -(-J10 * gx + J00 * gy) / det;
+
+      if (!Number.isFinite(dx) || !Number.isFinite(dy)) break;
+      x += dx; y += dy;
+      if (Math.hypot(dx, dy) < 1e-12) { converged = true; break; }
+    }
+
+    if (converged && Number.isFinite(x) && Number.isFinite(y)) {
+      def.step(x, y, p, o);
+      if (Math.hypot(o[0] - x, o[1] - y) < 1e-9) {
+        if (!pts.some(pt => Math.hypot(pt[0] - x, pt[1] - y) < 1e-4)) {
+          pts.push([x, y]);
+        }
+      }
+    }
+  }
+
+  return pts.map(([x, y], idx) => {
+    def.step(x, y, p, o);
+    def.step(x + eps, y, p, oX);
+    def.step(x, y + eps, p, oY);
+    const J00 = (oX[0] - o[0]) / eps;
+    const J01 = (oY[0] - o[0]) / eps;
+    const J10 = (oX[1] - o[1]) / eps;
+    const J11 = (oY[1] - o[1]) / eps;
+
+    const tr = J00 + J11;
+    const det = J00 * J11 - J01 * J10;
+    const disc = tr * tr - 4 * det;
+
+    let m1 = 0, m2 = 0;
+    if (disc >= 0) {
+      m1 = (tr + Math.sqrt(disc)) / 2;
+      m2 = (tr - Math.sqrt(disc)) / 2;
+    } else {
+      m1 = Math.sqrt(Math.max(0, det));
+      m2 = m1;
+    }
+
+    const isStable = Math.abs(m1) < 1 && Math.abs(m2) < 1;
+    let type = isStable ? 'stable fixed point' : (Math.abs(m1) > 1 && Math.abs(m2) > 1 ? 'unstable node' : 'hyperbolic saddle');
+
+    let v = [1, 0, 0];
+    if (!isStable) {
+      const lam = (Math.abs(m1) >= Math.abs(m2)) ? m1 : m2;
+      const vx = -J01;
+      const vy = J00 - lam;
+      const vlen = Math.hypot(vx, vy);
+      if (vlen > 1e-8) v = [vx / vlen, vy / vlen, 0];
+    } else {
+      v = [Math.random() - 0.5, Math.random() - 0.5, 0];
+      const len = Math.hypot(v[0], v[1]) || 1;
+      v = [v[0] / len, v[1] / len, 0];
+    }
+
+    return {
+      point: [x, y, 0],
+      label: `E${idx + 1} (${x.toFixed(2)}, ${y.toFixed(2)}) · ${type}`,
+      type,
+      isStable,
+      v,
+      note: isStable ? 'This fixed point is stable; light would not leave it — starting with a small random kick instead' : ''
+    };
+  });
+}
+
+let cachedEquilibria = null;
+let cachedEquilibriaKey = '';
+
+function getEquilibria(forceRefresh) {
+  const d = cur && cur.def;
+  if (!d) return [];
+  const kind = d.kind;
+  if (kind === 'flow' || kind === 'poincare') return [];
+
+  const key = `${cur.name}_${JSON.stringify(state.p)}_${state.q}_${state.sys === 'custom' ? JSON.stringify(state.customConfig) : ''}`;
+  if (!forceRefresh && cachedEquilibria && cachedEquilibriaKey === key) {
+    return cachedEquilibria;
+  }
+
+  if (kind === 'map') {
+    const list = findFixedPointsMap(d, state.p);
+    cachedEquilibria = list;
+    cachedEquilibriaKey = key;
+    return list;
+  }
+
+  const seeds = [];
+  seeds.push([0, 0, 0]);
+  if (d.x0) seeds.push([d.x0[0], d.x0[1], d.x0[2] || 0]);
+
+  if (cur.key === 'lorenz' || cur.def === SYS.lorenz) {
+    const b = state.p.b, r = state.p.r;
+    if (r > 1 && b > 0) {
+      const c = Math.sqrt(b * (r - 1));
+      seeds.push([c, c, r - 1]);
+      seeds.push([-c, -c, r - 1]);
+    }
+  } else if (cur.key === 'chen' || cur.def === SYS.chen) {
+    const a = state.p.a, b = state.p.b, c = state.p.c;
+    if (2 * c > a && b > 0) {
+      const val = Math.sqrt(b * (2 * c - a));
+      seeds.push([val, val, 2 * c - a]);
+      seeds.push([-val, -val, 2 * c - a]);
+    }
+  }
+
+  let bx0 = -25, bx1 = 25, by0 = -25, by1 = 25, bz0 = 0, bz1 = 40;
+  if (cache && cache.pts && cache.n > 50) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    const pts = cache.pts;
+    const step = Math.max(1, Math.floor(cache.n / 500));
+    for (let i = 0; i < cache.n; i += step) {
+      const k = i * 3, x = pts[k], y = pts[k + 1], z = pts[k + 2];
+      if (Number.isFinite(x)) {
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+      }
+    }
+    if (Number.isFinite(minX)) {
+      bx0 = minX; bx1 = maxX; by0 = minY; by1 = maxY; bz0 = minZ; bz1 = maxZ;
+    }
+  }
+
+  for (let i = 0; i < 36; i++) {
+    seeds.push([
+      bx0 + Math.random() * (bx1 - bx0),
+      by0 + Math.random() * (by1 - by0),
+      bz0 + Math.random() * (bz1 - bz0)
+    ]);
+  }
+
+  const scale = Math.max(1, Math.hypot(bx1 - bx0, by1 - by0, bz1 - bz0));
+  const tol = 1e-5 * scale;
+  const rawEqs = [];
+
+  for (const s of seeds) {
+    const pt = newtonSolve3D(d.f, s, state.p);
+    if (pt && Number.isFinite(pt[0]) && Number.isFinite(pt[1]) && Number.isFinite(pt[2])) {
+      if (!rawEqs.some(e => Math.hypot(e[0] - pt[0], e[1] - pt[1], e[2] - pt[2]) < tol)) {
+        rawEqs.push(pt);
+      }
+    }
+  }
+
+  rawEqs.sort((a, b) => {
+    const na = Math.hypot(a[0], a[1], a[2]), nb = Math.hypot(b[0], b[1], b[2]);
+    if (na < 1e-5) return -1;
+    if (nb < 1e-5) return 1;
+    return a[0] - b[0];
+  });
+
+  const list = rawEqs.map(([x, y, z], idx) => {
+    const J = computeJacobian3D(d.f, x, y, z, state.p);
+    const { eigs, isStable, type, unstableEig, v } = classifyJacobian3D(J);
+
+    const ptStr = `${Math.abs(x) < 1e-5 ? '0' : x.toFixed(2)}, ${Math.abs(y) < 1e-5 ? '0' : y.toFixed(2)}, ${Math.abs(z) < 1e-5 ? '0' : z.toFixed(2)}`;
+    return {
+      point: [x, y, z],
+      label: `E${idx + 1} (${ptStr}) · ${type}`,
+      type,
+      isStable,
+      eigs,
+      v,
+      scale,
+      note: isStable ? 'This equilibrium is stable; light would not leave it — starting with a small random kick instead' : ''
+    };
+  });
+
+  cachedEquilibria = list;
+  cachedEquilibriaKey = key;
+  return list;
+}
+
+function getChosenSourcePoint() {
+  const d = cur && cur.def;
+  if (!d) return [0, 0, 0];
+
+  if (state.traceSource === 'fixed') {
+    const eqs = getEquilibria();
+    if (eqs && eqs.length > 0) {
+      const idx = Math.min(eqs.length - 1, Math.max(0, state.traceEquilIdx || 0));
+      const eq = eqs[idx];
+      const scale = eq.scale || 20;
+      const eps = 1e-4 * scale;
+      return [
+        eq.point[0] + eps * eq.v[0],
+        eq.point[1] + eps * eq.v[1],
+        eq.point[2] + eps * eq.v[2]
+      ];
+    }
+  }
+
+  if (d.kind === 'map') return [0.1, 0.1, 0];
+  return [d.x0[0], d.x0[1], d.x0[2] || 0];
+}
+
+function getSourceMarkerCenter() {
+  const d = cur && cur.def;
+  if (!d) return [0, 0, 0];
+  if (state.traceSource === 'fixed') {
+    const eqs = getEquilibria();
+    if (eqs && eqs.length > 0) {
+      const idx = Math.min(eqs.length - 1, Math.max(0, state.traceEquilIdx || 0));
+      return eqs[idx].point;
+    }
+  }
+  if (d.kind === 'map') return [0.1, 0.1, 0];
+  return [d.x0[0], d.x0[1], d.x0[2] || 0];
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    5. Solvers (RK4, Grünwald–Letnikov, Poincare, Flows)
    ───────────────────────────────────────────────────────────────────────────── */
 function makeYield(id) {
@@ -1600,12 +2082,14 @@ function makeYield(id) {
   };
 }
 
-async function runRK4(d, p, n, yf) {
+async function runRK4(d, p, n, yf, optStart) {
   const pts = new Float32Array(n * 3);
   const f = d.f;
   const dt = d.dt, h2 = dt / 2, h6 = dt / 6;
   const a = new Float64Array(3), b = new Float64Array(3), c = new Float64Array(3), e = new Float64Array(3);
-  let x = d.x0[0], y = d.x0[1], z = d.x0[2] || 0;
+  let x = (optStart && Number.isFinite(optStart[0])) ? optStart[0] : d.x0[0];
+  let y = (optStart && Number.isFinite(optStart[1])) ? optStart[1] : d.x0[1];
+  let z = (optStart && Number.isFinite(optStart[2])) ? optStart[2] : (d.x0[2] || 0);
   let t = 0;
   let m = n, warn = '';
 
@@ -1635,7 +2119,7 @@ async function runRK4(d, p, n, yf) {
   return { pts, n: m, start: Math.floor(m * 0.01), warn, info: `RK4 · Δt = ${d.dt} · ${fmtInt(n)} steps` };
 }
 
-async function runGL(d, p, q, n, yf) {
+async function runGL(d, p, q, n, yf, optStart) {
   const L = GL_MEMORY;
   const h = d.h;
   const hq = Math.pow(h, q);
@@ -1646,7 +2130,10 @@ async function runGL(d, p, q, n, yf) {
 
   const X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n);
   const o = new Float64Array(3);
-  X[0] = d.x0[0]; Y[0] = d.x0[1]; Z[0] = d.x0[2] || 0;
+  let x0 = (optStart && Number.isFinite(optStart[0])) ? optStart[0] : d.x0[0];
+  let y0 = (optStart && Number.isFinite(optStart[1])) ? optStart[1] : d.x0[1];
+  let z0 = (optStart && Number.isFinite(optStart[2])) ? optStart[2] : (d.x0[2] || 0);
+  X[0] = x0; Y[0] = y0; Z[0] = z0;
 
   let m = n, warn = '';
   for (let k = 1; k < n; k++) {
@@ -1771,8 +2258,9 @@ async function recompute() {
   const yf = makeYield(id);
   try {
     let res;
-    if (kind === 'rk4') res = await runRK4(d, state.p, DETAIL.rk4[state.detail], yf);
-    else if (kind === 'frac') res = await runGL(d, state.p, state.q, DETAIL.frac[state.detail], yf);
+    const startPt = (state.traceSource === 'fixed') ? getChosenSourcePoint() : null;
+    if (kind === 'rk4') res = await runRK4(d, state.p, DETAIL.rk4[state.detail], yf, startPt);
+    else if (kind === 'frac') res = await runGL(d, state.p, state.q, DETAIL.frac[state.detail], yf, startPt);
     else if (kind === 'flow') res = await runFlow(d, state.p, DETAIL.flow[state.detail], yf);
     else res = await runPoincare(d, state.p, DETAIL.poincare[state.detail], yf);
 
@@ -2273,35 +2761,69 @@ function traceEase(t) {
 
 function drawGlowHead(ctx, hx, hy, base, headGlow, lut, pulse) {
   pulse = pulse || 1;
-  const rCore = Math.max(2, base * 0.012 * headGlow * pulse);
-  const rOuter = rCore * 3;
-  const bi = Math.min(1023, Math.round(1023 * 0.92)) * 3;
+  const hg = headGlow || 1;
+  const rCore = Math.max(2.5, base * 0.010 * hg * pulse);
+  const rOuter = Math.max(8, base * 0.038 * hg * pulse);
+  const bi = Math.min(1023, Math.round(1023 * 0.94)) * 3;
   const cr = lut[bi], cg = lut[bi + 1], cb = lut[bi + 2];
 
   ctx.save();
   const grad = ctx.createRadialGradient(hx, hy, 0, hx, hy, rOuter);
   grad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
-  grad.addColorStop(0.25, `rgba(${cr}, ${cg}, ${cb}, 0.85)`);
-  grad.addColorStop(0.65, `rgba(${cr}, ${cg}, ${cb}, 0.25)`);
+  grad.addColorStop(0.18, `rgba(${cr}, ${cg}, ${cb}, 0.92)`);
+  grad.addColorStop(0.48, `rgba(${cr}, ${cg}, ${cb}, 0.38)`);
+  grad.addColorStop(0.78, `rgba(${cr}, ${cg}, ${cb}, 0.12)`);
   grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
   ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.arc(hx, hy, rOuter, 0, 2 * Math.PI);
   ctx.fill();
+
+  // Sharp bright white core
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+  ctx.beginPath();
+  ctx.arc(hx, hy, rCore * 0.6, 0, 2 * Math.PI);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawPulsingSource(ctx, sx, sy, base, lut, elapsed) {
+  const pulse = (Math.sin(elapsed * 4) + 1) * 0.5; // 0 to 1
+  const rRing = base * (0.007 + 0.015 * pulse);
+  const ringAlpha = (1 - pulse) * 0.9;
+  const bi = Math.min(1023, Math.round(1023 * 0.95)) * 3;
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(${lut[bi]}, ${lut[bi + 1]}, ${lut[bi + 2]}, ${ringAlpha})`;
+  ctx.lineWidth = Math.max(1, base * 0.0018);
+  ctx.beginPath();
+  ctx.arc(sx, sy, rRing, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // Core bright dot
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.beginPath();
+  ctx.arc(sx, sy, Math.max(1.8, base * 0.0035), 0, 2 * Math.PI);
+  ctx.fill();
   ctx.restore();
 }
 
 let mapTracePts = null, mapTraceCacheKey = '';
-function getMapTracePts(total) {
-  const key = `${cur.name}_${total}_${JSON.stringify(state.p)}`;
+function getMapTracePts(total, optStart) {
+  const startKey = optStart ? `${optStart[0].toFixed(5)}_${optStart[1].toFixed(5)}` : 'default';
+  const key = `${cur.name}_${total}_${JSON.stringify(state.p)}_${startKey}`;
   if (mapTracePts && mapTraceCacheKey === key && mapTracePts.length >= total * 2) {
     return mapTracePts;
   }
   const d = cur.def, p = state.p, o2 = [0, 0];
   const pts = new Float32Array(total * 2);
-  let x = 0.1, y = 0.1;
-  for (let i = 0; i < 100; i++) { d.step(x, y, p, o2); x = o2[0]; y = o2[1]; }
+  let x = (optStart && Number.isFinite(optStart[0])) ? optStart[0] : 0.1;
+  let y = (optStart && Number.isFinite(optStart[1])) ? optStart[1] : 0.1;
+
+  const transient = optStart ? 0 : 100;
+  for (let i = 0; i < transient; i++) { d.step(x, y, p, o2); x = o2[0]; y = o2[1]; }
   for (let i = 0; i < total; i++) {
     d.step(x, y, p, o2); x = o2[0]; y = o2[1];
     pts[i * 2] = x;
@@ -2312,6 +2834,152 @@ function getMapTracePts(total) {
   return pts;
 }
 
+let liveSim = null;
+
+function initLiveSim() {
+  const d = cur && cur.def;
+  if (!d) return null;
+  const startPt = getChosenSourcePoint();
+  const tailCap = 4000;
+
+  const sim = {
+    x: startPt[0],
+    y: startPt[1],
+    z: startPt[2] || 0,
+    t: 0,
+    stepCount: 0,
+    diverged: false,
+    tailCap,
+    tailBuffer: new Float32Array(tailCap * 3),
+    tailHead: 0,
+    tailLen: 0,
+    isFrac: fracActive(),
+    glL: GL_MEMORY,
+    glX: new Float64Array(GL_MEMORY),
+    glY: new Float64Array(GL_MEMORY),
+    glZ: new Float64Array(GL_MEMORY),
+    glC: null,
+    glCount: 0,
+    glHead: 0
+  };
+
+  if (sim.isFrac) {
+    const q = state.q, L = GL_MEMORY;
+    const C = new Float64Array(L + 1);
+    C[0] = 1;
+    for (let j = 1; j <= L; j++) C[j] = (1 - (1 + q) / j) * C[j - 1];
+    sim.glC = C;
+    sim.glX[0] = sim.x; sim.glY[0] = sim.y; sim.glZ[0] = sim.z;
+    sim.glCount = 1;
+    sim.glHead = 0;
+  }
+
+  sim.tailBuffer[0] = sim.x;
+  sim.tailBuffer[1] = sim.y;
+  sim.tailBuffer[2] = sim.z;
+  sim.tailHead = 1;
+  sim.tailLen = 1;
+
+  return sim;
+}
+
+function stepLiveSim(sim, steps) {
+  if (!sim || sim.diverged) return;
+  const d = cur.def, p = state.p, kind = cur.def.kind;
+  const tailCap = sim.tailCap;
+  const buf = sim.tailBuffer;
+
+  if (kind === 'map') {
+    const o = [0, 0];
+    for (let s = 0; s < steps; s++) {
+      d.step(sim.x, sim.y, p, o);
+      sim.x = o[0]; sim.y = o[1]; sim.z = 0;
+      sim.stepCount++;
+
+      if (!Number.isFinite(sim.x) || !Number.isFinite(sim.y) || Math.abs(sim.x) + Math.abs(sim.y) > 1e6) {
+        sim.diverged = true;
+        break;
+      }
+
+      const idx = sim.tailHead;
+      buf[idx * 3] = sim.x;
+      buf[idx * 3 + 1] = sim.y;
+      buf[idx * 3 + 2] = 0;
+      sim.tailHead = (idx + 1) % tailCap;
+      if (sim.tailLen < tailCap) sim.tailLen++;
+    }
+  } else if (sim.isFrac) {
+    const h = d.h, hq = Math.pow(h, state.q), f = d.f, L = sim.glL, C = sim.glC;
+    const o = [0, 0, 0];
+    for (let s = 0; s < steps; s++) {
+      f(sim.x, sim.y, sim.z, sim.t, p, o);
+
+      let sx = 0, sy = 0, sz = 0;
+      const count = Math.min(sim.glCount, L);
+      for (let j = 1; j <= count; j++) {
+        const c = C[j];
+        const prevIdx = (sim.glHead - j + 1 + L * 2) % L;
+        sx += c * sim.glX[prevIdx];
+        sy += c * sim.glY[prevIdx];
+        sz += c * sim.glZ[prevIdx];
+      }
+
+      const nx = o[0] * hq - sx;
+      const ny = o[1] * hq - sy;
+      const nz = o[2] * hq - sz;
+
+      sim.x = nx; sim.y = ny; sim.z = nz;
+      sim.t += h;
+      sim.stepCount++;
+
+      if (!Number.isFinite(nx) || !Number.isFinite(ny) || !Number.isFinite(nz) || Math.abs(nx) + Math.abs(ny) + Math.abs(nz) > 1e6) {
+        sim.diverged = true;
+        break;
+      }
+
+      sim.glHead = (sim.glHead + 1) % L;
+      sim.glX[sim.glHead] = nx;
+      sim.glY[sim.glHead] = ny;
+      sim.glZ[sim.glHead] = nz;
+      if (sim.glCount < L) sim.glCount++;
+
+      const idx = sim.tailHead;
+      buf[idx * 3] = nx;
+      buf[idx * 3 + 1] = ny;
+      buf[idx * 3 + 2] = nz;
+      sim.tailHead = (idx + 1) % tailCap;
+      if (sim.tailLen < tailCap) sim.tailLen++;
+    }
+  } else {
+    const dt = d.dt, h2 = dt / 2, h6 = dt / 6, f = d.f;
+    const a = [0, 0, 0], b = [0, 0, 0], c = [0, 0, 0], e = [0, 0, 0];
+    for (let s = 0; s < steps; s++) {
+      f(sim.x, sim.y, sim.z, sim.t, p, a);
+      f(sim.x + h2 * a[0], sim.y + h2 * a[1], sim.z + h2 * a[2], sim.t + h2, p, b);
+      f(sim.x + h2 * b[0], sim.y + h2 * b[1], sim.z + h2 * b[2], sim.t + h2, p, c);
+      f(sim.x + dt * c[0], sim.y + dt * c[1], sim.z + dt * c[2], sim.t + dt, p, e);
+
+      sim.x += h6 * (a[0] + 2 * b[0] + 2 * c[0] + e[0]);
+      sim.y += h6 * (a[1] + 2 * b[1] + 2 * c[1] + e[1]);
+      sim.z += h6 * (a[2] + 2 * b[2] + 2 * c[2] + e[2]);
+      sim.t += dt;
+      sim.stepCount++;
+
+      if (!Number.isFinite(sim.x) || !Number.isFinite(sim.y) || !Number.isFinite(sim.z) || Math.abs(sim.x) + Math.abs(sim.y) + Math.abs(sim.z) > 1e6) {
+        sim.diverged = true;
+        break;
+      }
+
+      const idx = sim.tailHead;
+      buf[idx * 3] = sim.x;
+      buf[idx * 3 + 1] = sim.y;
+      buf[idx * 3 + 2] = sim.z;
+      sim.tailHead = (idx + 1) % tailCap;
+      if (sim.tailLen < tailCap) sim.tailLen++;
+    }
+  }
+}
+
 function stopTrace() {
   traceRunning = false;
   if (traceRaf) {
@@ -2320,6 +2988,7 @@ function stopTrace() {
   }
   trailCanvas = null;
   trailCtx = null;
+  liveSim = null;
 }
 
 function restartTrace() {
@@ -2330,6 +2999,10 @@ function restartTrace() {
   if ($('tracePlay')) $('tracePlay').textContent = '⏸ Pause';
   if (trailCtx && trailCanvas) {
     trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+  }
+  setWarn('');
+  if (state.traceLive) {
+    liveSim = initLiveSim();
   }
   startTrace();
 }
@@ -2354,6 +3027,8 @@ function toggleTracePlay() {
   else pauseTrace();
 }
 
+let lastTraceViewKey = '';
+
 function tickTrace(now) {
   if (!traceRunning || !state.trace) return;
   traceRaf = requestAnimationFrame(tickTrace);
@@ -2365,6 +3040,143 @@ function tickTrace(now) {
   if (tracePaused) return;
 
   traceElapsed += delta;
+  const { W, H } = sizeCanvas();
+  const ctx = plate.getContext('2d');
+  const view = buildView(W, H, { fast: false });
+  const { box, base, lut, shade, toScreenXYZ, toScreen } = view;
+
+  const br = lut[0], bg = lut[1], bb = lut[2];
+  const bgL = (0.2126 * br + 0.7152 * bg + 0.0722 * bb) / 255;
+  const compOp = bgL < 0.5 ? 'lighter' : 'multiply';
+  const { trailCanvas: tc, trailCtx: tctx } = ensureTrailCanvas(W, H);
+
+  // Check if view transform rotated mid-animation (e.g. dragging yaw/pitch/zoom)
+  const currentViewKey = `${state.yaw.toFixed(3)}_${state.pitch.toFixed(3)}_${state.zoom.toFixed(2)}_${W}_${H}`;
+  const viewChanged = (lastTraceViewKey && lastTraceViewKey !== currentViewKey);
+  lastTraceViewKey = currentViewKey;
+
+  const srcMarker = getSourceMarkerCenter();
+  const srcMarkerScreen = view.toScreenXYZ(srcMarker[0], srcMarker[1], srcMarker[2] || 0);
+
+  /* ── Mode 1: 🔴 Live Integration (Never Ends) ── */
+  if (state.traceLive) {
+    if (!liveSim) liveSim = initLiveSim();
+    if (!liveSim) return;
+
+    if (liveSim.diverged) {
+      setWarn('Trajectory diverged. Click ↺ Restart to re-launch from source.');
+      return;
+    }
+
+    const targetSteps = Math.min(3000, Math.max(1, Math.round((state.traceSpeed || 800) * delta)));
+    const prevHead = liveSim.tailHead;
+    const prevX = liveSim.x, prevY = liveSim.y, prevZ = liveSim.z;
+
+    stepLiveSim(liveSim, targetSteps);
+
+    // Apply trail decay to fade older density
+    if (state.traceDecay > 0) {
+      const fadeAlpha = 1 - Math.exp(-(state.traceDecay || 0.02) * delta * 50);
+      tctx.save();
+      tctx.globalCompositeOperation = 'destination-out';
+      tctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.25, Math.max(0.001, fadeAlpha))})`;
+      tctx.fillRect(0, 0, W, H);
+      tctx.restore();
+    }
+
+    // Splat newly generated steps into trailCanvas
+    tctx.save();
+    tctx.globalCompositeOperation = compOp;
+    tctx.lineWidth = Math.max(1, base * 0.0014);
+    tctx.lineCap = 'round';
+    tctx.lineJoin = 'round';
+
+    const p0 = [0, 0, 0], p1 = [0, 0, 0];
+    const buf = liveSim.tailBuffer, cap = liveSim.tailCap;
+    const stepsDrawn = Math.min(targetSteps, liveSim.tailLen);
+
+    for (let s = 0; s < stepsDrawn; s++) {
+      const idx = (liveSim.tailHead - stepsDrawn + s + cap) % cap;
+      const x = buf[idx * 3], y = buf[idx * 3 + 1], z = buf[idx * 3 + 2];
+      view.toScreenXYZ(x, y, z, p1);
+
+      if (s > 0) {
+        const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+        if (Math.hypot(dx, dy) < base * 0.4) {
+          const colIdx = (0.65 * 1023) | 0;
+          const depth01 = p1[2];
+          const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+          const r = (lut[colIdx * 3] * sh) | 0;
+          const g = (lut[colIdx * 3 + 1] * sh) | 0;
+          const b = (lut[colIdx * 3 + 2] * sh) | 0;
+          tctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.75)`;
+          tctx.beginPath();
+          tctx.moveTo(p0[0], p0[1]);
+          tctx.lineTo(p1[0], p1[1]);
+          tctx.stroke();
+        }
+      }
+      p0[0] = p1[0]; p0[1] = p1[1]; p0[2] = p1[2];
+    }
+    tctx.restore();
+
+    // Render composite
+    ctx.save();
+    ctx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(tc, 0, 0);
+
+    // Glowing tail from ring buffer with exponential decay
+    const tailPoints = Math.min(liveSim.tailLen, Math.max(10, Math.round(liveSim.tailCap * (state.traceTail || 4) * 0.01)));
+    if (tailPoints > 1) {
+      ctx.save();
+      ctx.globalCompositeOperation = compOp;
+      let pp0 = [0, 0, 0], pp1 = [0, 0, 0], validPrev = false;
+
+      for (let j = 0; j < tailPoints; j++) {
+        const bIdx = (liveSim.tailHead - tailPoints + j + cap) % cap;
+        const x = buf[bIdx * 3], y = buf[bIdx * 3 + 1], z = buf[bIdx * 3 + 2];
+        view.toScreenXYZ(x, y, z, pp1);
+
+        if (validPrev) {
+          const frac = j / (tailPoints - 1); // 0 (tail) -> 1 (head)
+          const alpha = Math.exp(-3.5 * (1 - frac));
+          const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
+          const depth01 = pp1[2];
+          const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+          const r = (lut[bi] * sh) | 0;
+          const g = (lut[bi + 1] * sh) | 0;
+          const b = (lut[bi + 2] * sh) | 0;
+
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * (bgL < 0.5 ? 0.95 : 0.85)})`;
+          ctx.lineWidth = Math.max(1, base * (0.0008 + 0.0035 * Math.pow(frac, 1.5)));
+          ctx.beginPath();
+          ctx.moveTo(pp0[0], pp0[1]);
+          ctx.lineTo(pp1[0], pp1[1]);
+          ctx.stroke();
+        }
+        pp0[0] = pp1[0]; pp0[1] = pp1[1]; pp0[2] = pp1[2];
+        validPrev = true;
+      }
+      ctx.restore();
+    }
+
+    // Glowing head
+    const headPt = view.toScreenXYZ(liveSim.x, liveSim.y, liveSim.z);
+    const flicker = 1 + 0.12 * Math.sin(traceElapsed * 15) + 0.05 * Math.cos(traceElapsed * 37);
+    drawGlowHead(ctx, headPt[0], headPt[1], base, state.traceHead || 1, lut, flicker);
+
+    // Pulsing source marker
+    drawPulsingSource(ctx, srcMarkerScreen[0], srcMarkerScreen[1], base, lut, traceElapsed);
+
+    if (state.caption) drawCaption(ctx, W, H, box, base, lut);
+    ctx.restore();
+
+    $('readout').textContent = `${cur.name} · 🔴 Live · ${fmtInt(liveSim.stepCount)} steps · ${Math.round(1 / Math.max(0.001, delta))} fps`;
+    return;
+  }
+
+  /* ── Mode 2: Fixed Trajectory Progress Animation ── */
   const dur = Math.max(4, state.traceDur);
   const isLoop = state.traceLoop;
 
@@ -2389,24 +3201,32 @@ function tickTrace(now) {
     }
   }
 
-  const { W, H } = sizeCanvas();
-  const ctx = plate.getContext('2d');
-  const view = buildView(W, H, { fast: false });
-  const { box, base, lut, shade, toScreenXYZ, toScreen } = view;
-
-  const { trailCanvas: tc, trailCtx: tctx } = ensureTrailCanvas(W, H);
+  // Completion check: when light reaches the end, canvas equals static print
+  if (progress >= 1 && !isLoop) {
+    renderArt(ctx, W, H, {
+      caption: state.caption,
+      fast: false,
+      includeHead: !!state.traceHoldEnd
+    });
+    $('readout').textContent = `${cur.name} · ${infoText()} · 100% trace (finished)`;
+    return;
+  }
 
   if (traceLastIdx === 0 && traceElapsed < 0.1) {
     tctx.clearRect(0, 0, W, H);
+  }
+
+  // If user dragged to rotate/zoom during trace, redraw trailCanvas up to traceLastIdx
+  if (viewChanged && traceLastIdx > 0) {
+    tctx.clearRect(0, 0, W, H);
+    traceLastIdx = 0;
   }
 
   const kind = cache.kind;
   const total = kind === 'map' ? DETAIL.map[state.detail] : cache.n;
   const targetIdx = Math.min(total - 1, Math.round(progress * (total - 1)));
 
-  const br = lut[0], bg = lut[1], bb = lut[2];
-  const bgL = (0.2126 * br + 0.7152 * bg + 0.0722 * bb) / 255;
-  const compOp = bgL < 0.5 ? 'lighter' : 'multiply';
+  const startPtDeparture = (state.traceSource === 'fixed') ? getChosenSourcePoint() : null;
 
   if (targetIdx > traceLastIdx) {
     tctx.save();
@@ -2421,7 +3241,7 @@ function tickTrace(now) {
     const endIdx = Math.min(targetIdx, traceLastIdx + maxPtsPerFrame);
 
     if (kind === 'map') {
-      const mpts = getMapTracePts(total);
+      const mpts = getMapTracePts(total, startPtDeparture);
       for (let i = traceLastIdx; i <= endIdx; i++) {
         toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
         let colIdx;
@@ -2494,7 +3314,7 @@ function tickTrace(now) {
 
   ctx.drawImage(tc, 0, 0);
 
-  // Draw tail
+  // Draw glowing comet tail with exponential decay
   const tailPct = Math.max(1, Math.min(15, state.traceTail || 4)) / 100;
   const tailCount = Math.max(2, Math.round(total * tailPct));
   const tailStart = Math.max(0, traceLastIdx - tailCount);
@@ -2502,13 +3322,16 @@ function tickTrace(now) {
   if (traceLastIdx > tailStart) {
     ctx.save();
     ctx.globalCompositeOperation = compOp;
+    const pt0 = [0, 0, 0];
+
     if (kind === 'map') {
-      const mpts = getMapTracePts(total);
+      const mpts = getMapTracePts(total, startPtDeparture);
       for (let i = tailStart; i <= traceLastIdx; i++) {
         const frac = (i - tailStart) / (traceLastIdx - tailStart);
+        const alpha = Math.exp(-3.5 * (1 - frac));
         view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
-        const bi = Math.min(1023, Math.round(1023 * (0.4 + 0.6 * frac))) * 3;
-        ctx.fillStyle = `rgba(${lut[bi]}, ${lut[bi + 1]}, ${lut[bi + 2]}, ${0.2 + 0.8 * frac})`;
+        const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
+        ctx.fillStyle = `rgba(${lut[bi]}, ${lut[bi + 1]}, ${lut[bi + 2]}, ${alpha * (bgL < 0.5 ? 0.95 : 0.85)})`;
         const dotR = Math.max(1, base * 0.002 * (1 + frac));
         ctx.beginPath();
         ctx.arc(pt0[0], pt0[1], dotR, 0, 2 * Math.PI);
@@ -2524,9 +3347,16 @@ function tickTrace(now) {
         view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt0);
         if (pvalid) {
           const frac = (i - tailStart) / count;
+          const alpha = Math.exp(-3.5 * (1 - frac));
           const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
-          ctx.strokeStyle = `rgba(${lut[bi]}, ${lut[bi + 1]}, ${lut[bi + 2]}, ${0.15 + 0.85 * frac})`;
-          ctx.lineWidth = Math.max(1.2, base * (0.001 + 0.0025 * frac));
+          const depth01 = pt0[2];
+          const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+          const r = (lut[bi] * sh) | 0;
+          const g = (lut[bi + 1] * sh) | 0;
+          const b = (lut[bi + 2] * sh) | 0;
+
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * (bgL < 0.5 ? 0.95 : 0.85)})`;
+          ctx.lineWidth = Math.max(1.2, base * (0.0008 + 0.0035 * Math.pow(frac, 1.5)));
           ctx.beginPath();
           ctx.moveTo(ppx, ppy);
           ctx.lineTo(pt0[0], pt0[1]);
@@ -2538,32 +3368,20 @@ function tickTrace(now) {
     ctx.restore();
   }
 
-  // Draw glowing comet head
+  // Draw glowing bloom comet head
   let headPt;
   if (kind === 'map') {
-    const mpts = getMapTracePts(total);
+    const mpts = getMapTracePts(total, startPtDeparture);
     const hi = Math.min(total - 1, traceLastIdx);
     headPt = view.toScreenXYZ(mpts[hi * 2], mpts[hi * 2 + 1], 0);
   } else {
     headPt = view.toScreen(Math.min(total - 1, traceLastIdx));
   }
-  const pulse = 1 + 0.18 * Math.sin(traceElapsed * 1.5 * 2 * Math.PI);
-  drawGlowHead(ctx, headPt[0], headPt[1], base, state.traceHead || 1, lut, pulse);
+  const flicker = 1 + 0.12 * Math.sin(traceElapsed * 15) + 0.05 * Math.cos(traceElapsed * 37);
+  drawGlowHead(ctx, headPt[0], headPt[1], base, state.traceHead || 1, lut, flicker);
 
-  // Initial state marker ring (fades over first 1.0 s)
-  if (traceElapsed < 1.0) {
-    const startPt = kind === 'map'
-      ? view.toScreenXYZ(getMapTracePts(total)[0], getMapTracePts(total)[1], 0)
-      : view.toScreen(0);
-    const ringAlpha = Math.max(0, 1 - traceElapsed);
-    ctx.save();
-    ctx.strokeStyle = `rgba(255, 255, 255, ${ringAlpha * 0.9})`;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(startPt[0], startPt[1], base * 0.015, 0, 2 * Math.PI);
-    ctx.stroke();
-    ctx.restore();
-  }
+  // Pulsing source marker
+  drawPulsingSource(ctx, srcMarkerScreen[0], srcMarkerScreen[1], base, lut, traceElapsed);
 
   if (state.caption) {
     drawCaption(ctx, W, H, box, base, lut);
@@ -2576,6 +3394,9 @@ function tickTrace(now) {
 
 function startTrace() {
   if (!state.trace || !cache) return;
+  if (state.traceLive && !liveSim) {
+    liveSim = initLiveSim();
+  }
   if (!traceRunning) {
     traceRunning = true;
     tracePaused = false;
@@ -2797,7 +3618,7 @@ function serializeLiveUrl(baseUrl) {
   const base = baseUrl || (typeof window !== 'undefined' && window.location && window.location.href ? window.location.href : 'https://example.com/phase-space-prints/');
   const u = new URL(base);
   u.search = '';
-  u.searchParams.set('live', '1');
+  u.searchParams.set('live', (state.traceLive || state.liveEndless) ? '1' : '0');
   u.searchParams.set('sys', state.sys);
   u.searchParams.set('palette', state.palette);
   u.searchParams.set('mode', state.mode);
@@ -2808,6 +3629,11 @@ function serializeLiveUrl(baseUrl) {
   u.searchParams.set('trace', state.trace ? '1' : '0');
   u.searchParams.set('breathe', state.liveBreathe ? '1' : '0');
   u.searchParams.set('autorot', state.liveRot ? '1' : '0');
+  u.searchParams.set('from', state.traceSource || 'init');
+  u.searchParams.set('eq', String(state.traceEquilIdx || 0));
+  u.searchParams.set('speed', String(state.traceSpeed || 800));
+  u.searchParams.set('decay', String(state.traceDecay !== undefined ? state.traceDecay : 0.02));
+  if (state.traceHoldEnd) u.searchParams.set('holdend', '1');
 
   if (state.sys === 'custom') {
     const c = state.customConfig;
@@ -2831,7 +3657,7 @@ function parseUrlParams(urlStr) {
   }
   if (!search) return null;
   const p = new URLSearchParams(search);
-  if (!p.has('sys') && !p.has('live')) return null;
+  if (!p.has('sys') && !p.has('live') && !p.has('from')) return null;
 
   const res = {};
   if (p.has('sys')) res.sys = p.get('sys');
@@ -2845,6 +3671,18 @@ function parseUrlParams(urlStr) {
   if (p.has('breathe')) res.liveBreathe = p.get('breathe') === '1';
   if (p.has('autorot')) res.liveRot = p.get('autorot') === '1';
 
+  if (p.has('from')) res.traceSource = p.get('from');
+  if (p.has('eq')) res.traceEquilIdx = parseInt(p.get('eq'), 10) || 0;
+  if (p.has('speed')) res.traceSpeed = +p.get('speed');
+  if (p.has('decay')) res.traceDecay = +p.get('decay');
+  if (p.has('holdend')) res.traceHoldEnd = p.get('holdend') === '1';
+  if (p.has('live')) {
+    const isLive = p.get('live') === '1';
+    res.traceLive = isLive;
+    res.liveEndless = isLive;
+    res.isLiveLaunch = isLive;
+  }
+
   if (res.sys === 'custom' || p.has('c_name')) {
     res.customConfig = {
       name: p.get('c_name') || 'Custom Model',
@@ -2856,7 +3694,6 @@ function parseUrlParams(urlStr) {
       dtStr: p.get('c_dt') || '0.01'
     };
   }
-  if (p.get('live') === '1') res.isLiveLaunch = true;
   return res;
 }
 
@@ -3274,6 +4111,68 @@ function syncAll() {
     $('traceHead').value = state.traceHead;
     $('traceHeadOut').textContent = state.traceHead.toFixed(1);
     $('traceLoop').checked = state.traceLoop;
+
+    const isEligible = d.kind !== 'flow' && d.kind !== 'poincare';
+    if ($('traceSourceBox')) $('traceSourceBox').hidden = !isEligible;
+    if (!isEligible && state.traceSource === 'fixed') state.traceSource = 'init';
+    if ($('traceSource')) $('traceSource').value = state.traceSource;
+
+    const isFixed = state.traceSource === 'fixed' && isEligible;
+    if ($('traceEquilBox')) {
+      $('traceEquilBox').hidden = !isFixed;
+      if (isFixed) {
+        const eqs = getEquilibria();
+        const sel = $('traceEquilSel');
+        if (sel) {
+          sel.innerHTML = '';
+          if (eqs.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '-1';
+            opt.textContent = 'No real equilibria found (falling back to x₀)';
+            sel.appendChild(opt);
+            if ($('traceEquilNote')) {
+              $('traceEquilNote').hidden = false;
+              $('traceEquilNote').textContent = 'No real equilibria found for current parameters — light begins from x₀.';
+            }
+          } else {
+            eqs.forEach((eq, i) => {
+              const opt = document.createElement('option');
+              opt.value = String(i);
+              opt.textContent = eq.label;
+              sel.appendChild(opt);
+            });
+            const activeIdx = Math.min(eqs.length - 1, Math.max(0, state.traceEquilIdx || 0));
+            sel.value = String(activeIdx);
+            if ($('traceEquilNote')) {
+              const eq = eqs[activeIdx];
+              if (eq && eq.note) {
+                $('traceEquilNote').hidden = false;
+                $('traceEquilNote').textContent = eq.note;
+              } else {
+                $('traceEquilNote').hidden = true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if ($('traceHoldEnd')) $('traceHoldEnd').checked = !!state.traceHoldEnd;
+    if ($('traceLive')) $('traceLive').checked = !!state.traceLive;
+    if ($('traceLiveBox')) $('traceLiveBox').hidden = !state.traceLive;
+    if ($('traceSpeed')) {
+      $('traceSpeed').value = state.traceSpeed;
+      if ($('traceSpeedOut')) $('traceSpeedOut').textContent = `${state.traceSpeed} steps/s`;
+    }
+    if ($('traceDecay')) {
+      $('traceDecay').value = state.traceDecay;
+      if ($('traceDecayOut')) $('traceDecayOut').textContent = (+state.traceDecay).toFixed(3).replace(/^-/, '−');
+    }
+    if ($('traceLoopWrap')) {
+      $('traceLoopWrap').style.opacity = state.traceLive ? '0.5' : '1';
+      $('traceLoopWrap').style.pointerEvents = state.traceLive ? 'none' : 'auto';
+      if ($('traceLoop')) $('traceLoop').disabled = state.traceLive;
+    }
   }
   if ($('liveTrace')) {
     $('liveTrace').checked = state.liveTrace;
@@ -3282,6 +4181,8 @@ function syncAll() {
     $('liveRotPeriodOut').textContent = `${state.liveRotPeriod} s`;
     $('liveBreathe').checked = state.liveBreathe;
     $('livePaletteDrift').checked = state.livePaletteDrift;
+    if ($('liveEndless')) $('liveEndless').checked = !!state.liveEndless;
+    if ($('liveSource')) $('liveSource').value = state.liveSource || state.traceSource || 'init';
   }
 }
 
@@ -3788,6 +4689,203 @@ function runUnitTests() {
     save();
   } catch (e) { assert('State persistence for new fields', false, e.message); }
 
+  log.push('\n=== 15. Equilibria Finding (Lorenz Analytic Validation) ===');
+  try {
+    const lorenzDef = SYS.lorenz;
+    const lorenzP = { s: 10, r: 28, b: 8/3 };
+    const savedCur = cur;
+    cur = { key: 'lorenz', name: 'Lorenz', def: lorenzDef, q: 1, over: {}, view: [0, 0, 1] };
+    const savedP = state.p;
+    state.p = lorenzP;
+
+    const eqs = getEquilibria(true);
+    const cVal = Math.sqrt((8/3) * (28 - 1)); // sqrt(72) ~ 8.485281374
+    const analytic = [
+      [0, 0, 0],
+      [cVal, cVal, 27],
+      [-cVal, -cVal, 27]
+    ];
+
+    assert('Lorenz equilibria count equals 3', eqs.length === 3, `Found ${eqs.length}`);
+    let allMatched = eqs.length === 3;
+    let maxDiff = 0;
+    for (const an of analytic) {
+      const match = eqs.find(e => Math.hypot(e.point[0] - an[0], e.point[1] - an[1], e.point[2] - an[2]) < 1e-6);
+      if (!match) allMatched = false;
+      else {
+        const d = Math.hypot(match.point[0] - an[0], match.point[1] - an[1], match.point[2] - an[2]);
+        if (d > maxDiff) maxDiff = d;
+      }
+    }
+    assert('Lorenz equilibria found by Newton match analytic three points within 1e-6', allMatched, `Max diff: ${maxDiff}`);
+
+    cur = savedCur;
+    state.p = savedP;
+  } catch (e) { assert('Lorenz equilibria validation', false, e.message); }
+
+  log.push('\n=== 16. Eigen-Classification & Map Fixed Points ===');
+  try {
+    const lorenzJ_origin = computeJacobian3D(SYS.lorenz.f, 0, 0, 0, { s: 10, r: 28, b: 8/3 });
+    const classOrigin = classifyJacobian3D(lorenzJ_origin);
+    assert('Eigen-classification: Lorenz origin is a saddle for ρ=28', classOrigin.type === 'saddle', `Got ${classOrigin.type}`);
+
+    const cliffP = { a: -1.4, b: 1.6, c: 1.0, d: 0.7 };
+    const cliffEqs = findFixedPointsMap(SYS.clifford, cliffP);
+    assert('Clifford map fixed point found', cliffEqs.length > 0);
+    if (cliffEqs.length > 0) {
+      const o = [0, 0];
+      SYS.clifford.step(cliffEqs[0].point[0], cliffEqs[0].point[1], cliffP, o);
+      const resDiff = Math.hypot(o[0] - cliffEqs[0].point[0], o[1] - cliffEqs[0].point[1]);
+      assert('Clifford fixed point satisfies |F(x*) − x*| < 1e-9', resDiff < 1e-9, `Diff: ${resDiff}`);
+    }
+
+    const dejongP = { a: 1.4, b: -2.3, c: 2.4, d: -2.1 };
+    const dejongEqs = findFixedPointsMap(SYS.dejong, dejongP);
+    assert('Peter de Jong map fixed point found', dejongEqs.length > 0);
+    if (dejongEqs.length > 0) {
+      const o = [0, 0];
+      SYS.dejong.step(dejongEqs[0].point[0], dejongEqs[0].point[1], dejongP, o);
+      const resDiff = Math.hypot(o[0] - dejongEqs[0].point[0], o[1] - dejongEqs[0].point[1]);
+      assert('Peter de Jong fixed point satisfies |F(x*) − x*| < 1e-9', resDiff < 1e-9, `Diff: ${resDiff}`);
+    }
+  } catch (e) { assert('Eigen-classification & map test', false, e.message); }
+
+  log.push('\n=== 17. Unstable Manifold Departure ===');
+  try {
+    const lorenzDef = SYS.lorenz;
+    const lorenzP = { s: 10, r: 28, b: 8/3 };
+    const J_origin = computeJacobian3D(lorenzDef.f, 0, 0, 0, lorenzP);
+    const classif = classifyJacobian3D(J_origin);
+    const eps = 1e-4 * 20;
+    let x = eps * classif.v[0], y = eps * classif.v[1], z = eps * classif.v[2];
+    const initialDist = Math.hypot(x, y, z);
+
+    const dt = lorenzDef.dt, h2 = dt / 2, h6 = dt / 6;
+    const a = [0, 0, 0], b = [0, 0, 0], c = [0, 0, 0], e = [0, 0, 0];
+    for (let step = 0; step < 200; step++) {
+      lorenzDef.f(x, y, z, 0, lorenzP, a);
+      lorenzDef.f(x + h2 * a[0], y + h2 * a[1], z + h2 * a[2], 0, lorenzP, b);
+      lorenzDef.f(x + h2 * b[0], y + h2 * b[1], z + h2 * b[2], 0, lorenzP, c);
+      lorenzDef.f(x + dt * c[0], y + dt * c[1], z + dt * c[2], 0, lorenzP, e);
+      x += h6 * (a[0] + 2 * b[0] + 2 * c[0] + e[0]);
+      y += h6 * (a[1] + 2 * b[1] + 2 * c[1] + e[1]);
+      z += h6 * (a[2] + 2 * b[2] + 2 * c[2] + e[2]);
+    }
+    const finalDist = Math.hypot(x, y, z);
+    assert('Perturbed start from an unstable equilibrium moves away (distance grows over 200 steps)', finalDist > initialDist * 5, `Initial ${initialDist}, Final ${finalDist}`);
+  } catch (e) { assert('Unstable manifold departure test', false, e.message); }
+
+  log.push('\n=== 18. Live Mode Ring Buffer Invariance & GL Memory Bound ===');
+  try {
+    const savedCur = cur;
+    cur = { key: 'lorenz', name: 'Lorenz', def: SYS.lorenz, q: 1, over: {}, view: [0, 0, 1] };
+    const sim = initLiveSim();
+    assert('Live sim initializes with bounded tail ring buffer', sim && sim.tailBuffer.length === 4000 * 3);
+
+    for (let chunk = 0; chunk < 100; chunk++) {
+      stepLiveSim(sim, 1000);
+    }
+    assert('Live mode ring buffer stays at its fixed size after 100k steps', sim.tailBuffer.length === 4000 * 3);
+    assert('Live sim step count reaches 100k', sim.stepCount >= 100000);
+
+    const savedQ = state.q;
+    cur = resolve('fLorenz');
+    state.q = cur.q;
+    const fracSim = initLiveSim();
+    assert('Fractional GL memory buffers are allocated', fracSim && fracSim.isFrac);
+    for (let chunk = 0; chunk < 5; chunk++) {
+      stepLiveSim(fracSim, 500);
+    }
+    assert('GL memory stays ≤ L', fracSim.glX.length <= GL_MEMORY && fracSim.glCount <= GL_MEMORY);
+
+    state.q = savedQ;
+    cur = savedCur;
+  } catch (e) { assert('Live mode ring buffer test', false, e.message); }
+
+  log.push('\n=== 19. Extended Live & Source URL Round-Trip ===');
+  try {
+    const originalState = {
+      sys: 'chen',
+      palette: 'glacier',
+      mode: 'density',
+      yaw: 0.78,
+      pitch: -0.45,
+      zoom: 1.25,
+      trace: true,
+      traceSource: 'fixed',
+      traceEquilIdx: 1,
+      traceSpeed: 1200,
+      traceDecay: 0.035,
+      traceHoldEnd: true,
+      traceLive: true
+    };
+    const savedSnapshot = Object.assign({}, state);
+    Object.assign(state, originalState);
+
+    const link = serializeLiveUrl('https://example.com/phase-space-prints/');
+    const parsed = parseUrlParams(link);
+
+    assert('Round-trip preserves sys', parsed && parsed.sys === 'chen');
+    assert('Round-trip preserves from (light source)', parsed && parsed.traceSource === 'fixed');
+    assert('Round-trip preserves eq index', parsed && parsed.traceEquilIdx === 1);
+    assert('Round-trip preserves speed', parsed && parsed.traceSpeed === 1200);
+    assert('Round-trip preserves decay', parsed && Math.abs(parsed.traceDecay - 0.035) < 1e-4);
+    assert('Round-trip preserves holdend', parsed && parsed.traceHoldEnd === true);
+    assert('Round-trip preserves live flag', parsed && parsed.traceLive === true);
+
+    Object.assign(state, savedSnapshot);
+  } catch (e) { assert('Extended URL round-trip test', false, e.message); }
+
+  log.push('\n=== 20. Trace Completion vs Static Render Determinism ===');
+  try {
+    const savedCur = cur;
+    cur = { key: 'lorenz', name: 'Lorenz', def: SYS.lorenz, q: 1, over: {}, view: [0, 0, 1] };
+    const savedCache = cache;
+    cache = {
+      pts: new Float32Array([
+        0.1, 0, 0,
+        0.5, 0.4, 0.2,
+        1.0, 1.2, 0.8,
+        1.5, 2.0, 1.8
+      ]),
+      n: 4,
+      start: 0,
+      kind: 'rk4',
+      info: 'test'
+    };
+
+    let staticPixels = null, traceFinalPixels = null;
+    const staticCtx = {
+      fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+      createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: (img) => { staticPixels = new Uint8ClampedArray(img.data); },
+      drawImage: () => {}, save: () => {}, restore: () => {}
+    };
+    const traceCtx = {
+      fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+      createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: (img) => { traceFinalPixels = new Uint8ClampedArray(img.data); },
+      drawImage: () => {}, save: () => {}, restore: () => {}
+    };
+
+    renderArt(staticCtx, 32, 32, { caption: false, fast: false });
+    renderArt(traceCtx, 32, 32, { caption: false, fast: false, includeHead: false });
+
+    let diff = 0;
+    if (staticPixels && traceFinalPixels) {
+      for (let i = 0; i < staticPixels.length; i++) {
+        if (staticPixels[i] !== traceFinalPixels[i]) diff++;
+      }
+    } else {
+      diff = -1;
+    }
+
+    assert('Final frame of a non-live trace equals the static render (pixel diff below threshold)', diff === 0, `Pixel diff: ${diff}`);
+
+    cache = savedCache;
+    cur = savedCur;
+  } catch (e) { assert('Trace completion pixel determinism test', false, e.message); }
+
   log.push(`\n========================================`);
   log.push(`Summary: ${passed} passed, ${failed} failed.`);
 
@@ -3811,12 +4909,14 @@ function init() {
   // Load saved state
   const saved = load();
   if (saved) {
-    for (const k of ['detail', 'yaw', 'pitch', 'zoom', 'exposure', 'contrast', 'traceDur', 'traceTail', 'traceHead', 'liveRotPeriod']) {
+    for (const k of ['detail', 'yaw', 'pitch', 'zoom', 'exposure', 'contrast', 'traceDur', 'traceTail', 'traceHead', 'traceSpeed', 'traceDecay', 'traceEquilIdx', 'liveRotPeriod']) {
       if (Number.isFinite(saved[k])) state[k] = saved[k];
     }
-    for (const k of ['depth', 'glow', 'caption', 'trace', 'traceLoop', 'liveTrace', 'liveRot', 'liveBreathe', 'livePaletteDrift']) {
+    for (const k of ['depth', 'glow', 'caption', 'trace', 'traceLoop', 'traceHoldEnd', 'traceLive', 'liveTrace', 'liveRot', 'liveBreathe', 'livePaletteDrift', 'liveEndless']) {
       if (typeof saved[k] === 'boolean') state[k] = saved[k];
     }
+    if (saved.traceSource === 'init' || saved.traceSource === 'fixed') state.traceSource = saved.traceSource;
+    if (saved.liveSource === 'init' || saved.liveSource === 'fixed') state.liveSource = saved.liveSource;
     if (PALETTES[saved.palette]) state.palette = saved.palette;
     if (FORMATS[saved.format]) state.format = saved.format;
     if (saved.mode === 'path' || saved.mode === 'density') state.mode = saved.mode;
@@ -3980,6 +5080,55 @@ function init() {
     });
     $('tracePlay').addEventListener('click', toggleTracePlay);
     $('traceRestart').addEventListener('click', restartTrace);
+
+    if ($('traceSource')) {
+      $('traceSource').addEventListener('change', e => {
+        state.traceSource = e.target.value;
+        state.liveSource = e.target.value;
+        syncAll();
+        scheduleRecompute();
+        if (state.trace) restartTrace();
+        save();
+      });
+    }
+    if ($('traceEquilSel')) {
+      $('traceEquilSel').addEventListener('change', e => {
+        state.traceEquilIdx = parseInt(e.target.value, 10) || 0;
+        syncAll();
+        scheduleRecompute();
+        if (state.trace) restartTrace();
+        save();
+      });
+    }
+    if ($('traceHoldEnd')) {
+      $('traceHoldEnd').addEventListener('change', e => {
+        state.traceHoldEnd = e.target.checked;
+        save();
+      });
+    }
+    if ($('traceLive')) {
+      $('traceLive').addEventListener('change', e => {
+        state.traceLive = e.target.checked;
+        state.liveEndless = e.target.checked;
+        syncAll();
+        if (state.trace) restartTrace();
+        save();
+      });
+    }
+    if ($('traceSpeed')) {
+      bindRange('traceSpeed', v => {
+        state.traceSpeed = v;
+        $('traceSpeedOut').textContent = `${v} steps/s`;
+        save();
+      });
+    }
+    if ($('traceDecay')) {
+      bindRange('traceDecay', v => {
+        state.traceDecay = v;
+        $('traceDecayOut').textContent = (+v).toFixed(3).replace(/^-/, '−');
+        save();
+      });
+    }
   }
 
   // Live Wallpaper controls
@@ -3997,6 +5146,25 @@ function init() {
     });
     $('liveBreathe').addEventListener('change', e => { state.liveBreathe = e.target.checked; save(); });
     $('livePaletteDrift').addEventListener('change', e => { state.livePaletteDrift = e.target.checked; save(); });
+
+    if ($('liveEndless')) {
+      $('liveEndless').addEventListener('change', e => {
+        state.liveEndless = e.target.checked;
+        state.traceLive = e.target.checked;
+        syncAll();
+        save();
+      });
+    }
+    if ($('liveSource')) {
+      $('liveSource').addEventListener('change', e => {
+        state.liveSource = e.target.value;
+        state.traceSource = e.target.value;
+        syncAll();
+        scheduleRecompute();
+        if (state.trace) restartTrace();
+        save();
+      });
+    }
 
     $('startLiveBtn').addEventListener('click', enterLiveMode);
     $('copyLiveLink').addEventListener('click', () => {

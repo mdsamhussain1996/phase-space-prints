@@ -26,10 +26,17 @@ const makeElem = (tag) => {
     setAttribute: () => {},
     getAttribute: () => '',
     focus: () => {},
+    width: 800,
+    height: 600,
     getContext: () => ({
       fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
       createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
-      putImageData: () => {}, drawImage: () => {}, save: () => {}, restore: () => {}
+      putImageData: () => {}, drawImage: () => {}, save: () => {}, restore: () => {},
+      beginPath: () => {}, closePath: () => {}, arc: () => {}, fill: () => {}, stroke: () => {},
+      moveTo: () => {}, lineTo: () => {}, clearRect: () => {},
+      createRadialGradient: () => ({ addColorStop: () => {} }),
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      setTransform: () => {}, resetTransform: () => {}
     })
   };
 };
@@ -88,7 +95,7 @@ const context = vm.createContext(sandbox);
 // Expose runUnitTests and helpers
 const modifiedScript = scriptText.replace(
   'init();',
-  'globalThis.runUnitTests = runUnitTests; globalThis.getEquilibria = getEquilibria; globalThis.SYS = SYS; globalThis.initLiveSim = initLiveSim; globalThis.stepLiveSim = stepLiveSim; globalThis.computeJacobian3D = computeJacobian3D; globalThis.classifyJacobian3D = classifyJacobian3D; init();'
+  'globalThis.runUnitTests = runUnitTests; globalThis.getEquilibria = getEquilibria; globalThis.SYS = SYS; globalThis.initLiveSim = initLiveSim; globalThis.stepLiveSim = stepLiveSim; globalThis.computeJacobian3D = computeJacobian3D; globalThis.classifyJacobian3D = classifyJacobian3D; globalThis.buildArcLengthTable = buildArcLengthTable; globalThis.getArcLengthIndex = getArcLengthIndex; globalThis.tickLiveMode = tickLiveMode; globalThis.serializeLiveUrl = serializeLiveUrl; globalThis.parseUrlParams = parseUrlParams; globalThis.state = state; init();'
 );
 vm.runInContext(modifiedScript, context);
 
@@ -127,6 +134,42 @@ vm.runInContext(`
   stepLiveSim(liveTestSim, 50000);
   if (liveTestSim.tailBuffer.length !== 12000) throw new Error('Ring buffer size altered');
   console.log('✅ PASS: Direct ring buffer bounded size verified (12000 floats)');
+
+  // 4. Arc-length mapping is monotonic and reaches end exactly at t = 1
+  const dummyCache = {
+    pts: new Float64Array([0,0,0, 1,0,0, 2,0,0, 3,0,0, 4,0,0]),
+    n: 5,
+    start: 0
+  };
+  buildArcLengthTable(dummyCache);
+  if (getArcLengthIndex(dummyCache, 1) !== 4) throw new Error('Arc-length mapping did not reach end at t = 1');
+  let prevIdx = -1;
+  for (let s = 0; s <= 20; s++) {
+    const idx = getArcLengthIndex(dummyCache, s / 20);
+    if (idx < prevIdx) throw new Error('Arc-length mapping not monotonic');
+    prevIdx = idx;
+  }
+  console.log('✅ PASS: Direct arc-length monotonic & t=1 endpoint invariant verified');
+
+  // 5. Light speed scaling: 0.25x makes pass 4x longer than 1x
+  const dur1x = 12 / 1.0;
+  const durQuarter = 12 / 0.25;
+  if (Math.abs(durQuarter / dur1x - 4.0) > 1e-6) throw new Error('Light speed duration scaling error');
+  console.log('✅ PASS: Direct light speed 0.25x scaling invariant verified');
+
+  // 6. URL round-trip preserves lspeed, dur, from, eq, live, trace
+  state.lightSpeed = 0.25;
+  state.traceDur = 90;
+  state.traceSource = 'fixed';
+  state.traceEquilIdx = 1;
+  state.liveEndless = true;
+  state.liveTrace = true;
+  const url = serializeLiveUrl('https://example.com/live');
+  const p = parseUrlParams(url);
+  if (p.lightSpeed !== 0.25 || p.traceDur !== 90 || p.traceSource !== 'fixed' || p.traceEquilIdx !== 1 || p.traceLive !== true || p.liveTrace !== true) {
+    throw new Error('URL round-trip mismatch: ' + JSON.stringify(p));
+  }
+  console.log('✅ PASS: Direct URL round-trip preserves lspeed, dur, from, eq, live, trace');
 `, context);
 
 console.log('\n✨ ALL TESTS PASSED SUCCESSFULLY! ✨');

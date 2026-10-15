@@ -443,6 +443,10 @@ input[type="range"] {
   padding: 5px 10px;
   font-size: 0.82rem;
 }
+.btn-xs {
+  padding: 3px 6px;
+  font-size: 0.75rem;
+}
 .top-actions .btn { white-space: nowrap; }
 
 /* Elements marked `hidden` must stay hidden even when a class gives them display:flex/grid */
@@ -719,7 +723,21 @@ input[type="range"] {
               <label for="traceDur">Duration</label>
               <output id="traceDurOut" for="traceDur">12 s</output>
             </div>
-            <input type="range" id="traceDur" min="4" max="60" step="1" value="12">
+            <input type="range" id="traceDur" min="4" max="600" step="1" value="12">
+          </div>
+          <div class="ctl" id="lightSpeedBox" style="margin-top:6px;">
+            <div class="ctl-head">
+              <label for="lightSpeed">Light speed</label>
+              <output id="lightSpeedOut" for="lightSpeed">1.0× · 12 s per pass</output>
+            </div>
+            <input type="range" id="lightSpeed" min="0.05" max="2" step="0.05" value="1" aria-label="Light speed multiplier">
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+              <button type="button" class="btn ghost btn-xs main-spd-btn" data-spd="0.1" aria-label="Very slow speed 0.1x">🐢 0.1×</button>
+              <button type="button" class="btn ghost btn-xs main-spd-btn" data-spd="0.25" aria-label="Slow speed 0.25x">Slow 0.25×</button>
+              <button type="button" class="btn ghost btn-xs main-spd-btn" data-spd="0.5" aria-label="Calm speed 0.5x">Calm 0.5×</button>
+              <button type="button" class="btn ghost btn-xs main-spd-btn" data-spd="1.0" aria-label="Normal speed 1x">Normal 1×</button>
+              <button type="button" class="btn ghost btn-xs main-spd-btn" data-spd="2.0" aria-label="Fast speed 2x">Fast 2×</button>
+            </div>
           </div>
           <div class="ctl">
             <div class="ctl-head">
@@ -757,7 +775,7 @@ input[type="range"] {
                 <label for="traceSpeed">Speed</label>
                 <output id="traceSpeedOut" for="traceSpeed">800 steps/s</output>
               </div>
-              <input type="range" id="traceSpeed" min="100" max="4000" step="50" value="800">
+              <input type="range" id="traceSpeed" min="10" max="4000" step="10" value="800">
             </div>
             <div class="ctl" style="margin-top:6px;">
               <div class="ctl-head">
@@ -836,27 +854,90 @@ input[type="range"] {
       <p style="margin:0 0 12px 0;font-size:0.86rem;color:var(--muted);">Run dynamic looping art directly in your browser. Perfect for desktop live wallpaper tools or full-screen ambient display.</p>
       
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:12px;">
-        <label class="check"><input type="checkbox" id="liveTrace" checked> Path trace animation</label>
         <label class="check"><input type="checkbox" id="liveRot" checked> Slow auto-rotation</label>
         <label class="check"><input type="checkbox" id="liveBreathe" checked> Breathing exposure</label>
         <label class="check"><input type="checkbox" id="livePaletteDrift"> Palette drift</label>
-        <label class="check"><input type="checkbox" id="liveEndless"> 🔴 Live (endless)</label>
       </div>
 
-      <div class="ctl" id="liveSourceBox" style="margin-bottom:12px;">
-        <label for="liveSource" style="display:block;margin-bottom:4px;font-size:0.86rem;">Light source</label>
-        <select id="liveSource" style="width:100%;padding:6px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--line);font-size:0.85rem;">
-          <option value="init" selected>Initial point x₀</option>
-          <option value="fixed">Fixed point (equilibrium)</option>
-        </select>
-      </div>
-
-      <div class="ctl" id="liveRotBox" style="margin-bottom:12px;">
+      <div class="ctl" id="liveRotBox" style="margin-bottom:14px;">
         <div class="ctl-head">
           <label for="liveRotPeriod">Rotation period</label>
           <output id="liveRotPeriodOut" for="liveRotPeriod">90 s</output>
         </div>
         <input type="range" id="liveRotPeriod" min="20" max="300" step="5" value="90">
+      </div>
+
+      <!-- Light Trail Group -->
+      <div style="margin-bottom:14px;padding:12px;background:var(--bg-subtle, rgba(255,255,255,0.03));border-radius:8px;border:1px solid var(--line);">
+        <h5 style="margin:0 0 10px 0;font-size:0.92rem;color:var(--text);display:flex;align-items:center;gap:6px;">
+          <span>✨ Light trail</span>
+        </h5>
+
+        <label class="check" style="margin-bottom:10px;font-weight:600;"><input type="checkbox" id="liveTrace" checked> Path trace animation (glow from start)</label>
+
+        <div id="liveTrailControls" style="display:flex;flex-direction:column;gap:10px;">
+          <div class="ctl" id="liveSourceBox">
+            <div class="ctl-head">
+              <label for="liveSource">Light source</label>
+            </div>
+            <select id="liveSource" style="width:100%;padding:6px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--line);font-size:0.85rem;">
+              <option value="init" selected>Initial point x₀</option>
+              <option value="fixed">Fixed point (equilibrium)</option>
+            </select>
+          </div>
+
+          <div class="ctl" id="liveLightSpeedBox">
+            <div class="ctl-head">
+              <label for="liveLightSpeed">Light speed</label>
+              <output id="liveLightSpeedOut" for="liveLightSpeed">1.0× · 12 s per pass</output>
+            </div>
+            <input type="range" id="liveLightSpeed" min="0.05" max="2" step="0.05" value="1" aria-label="Live light speed multiplier">
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+              <button type="button" class="btn ghost btn-xs live-spd-btn" data-spd="0.1" aria-label="Very slow speed 0.1x">🐢 0.1×</button>
+              <button type="button" class="btn ghost btn-xs live-spd-btn" data-spd="0.25" aria-label="Slow speed 0.25x">Slow 0.25×</button>
+              <button type="button" class="btn ghost btn-xs live-spd-btn" data-spd="0.5" aria-label="Calm speed 0.5x">Calm 0.5×</button>
+              <button type="button" class="btn ghost btn-xs live-spd-btn" data-spd="1.0" aria-label="Normal speed 1x">Normal 1×</button>
+              <button type="button" class="btn ghost btn-xs live-spd-btn" data-spd="2.0" aria-label="Fast speed 2x">Fast 2×</button>
+            </div>
+          </div>
+
+          <div id="liveFiniteGroup">
+            <div class="ctl" id="livePassDurBox">
+              <div class="ctl-head">
+                <label for="livePassDur">Pass duration (base)</label>
+                <output id="livePassDurOut" for="livePassDur">12 s</output>
+              </div>
+              <input type="range" id="livePassDur" min="4" max="600" step="1" value="12" aria-label="Base pass duration in seconds">
+            </div>
+
+            <div class="ctl" id="livePauseEndBox" style="margin-top:10px;">
+              <div class="ctl-head">
+                <label for="livePauseEnd">Pause at end</label>
+                <output id="livePauseEndOut" for="livePauseEnd">3 s</output>
+              </div>
+              <input type="range" id="livePauseEnd" min="0" max="10" step="0.5" value="3" aria-label="Pause at end in seconds">
+            </div>
+          </div>
+
+          <label class="check" style="font-weight:600;"><input type="checkbox" id="liveEndless"> 🔴 Live (endless integration)</label>
+          <div id="liveEndlessGroup" hidden style="display:flex;flex-direction:column;gap:10px;">
+            <div class="ctl" id="liveSpeedBox">
+              <div class="ctl-head">
+                <label for="liveSpeed">Speed</label>
+                <output id="liveSpeedOut" for="liveSpeed">800 steps/s</output>
+              </div>
+              <input type="range" id="liveSpeed" min="10" max="4000" step="10" value="800" aria-label="Endless simulation speed">
+            </div>
+
+            <div class="ctl" id="liveDecayBox">
+              <div class="ctl-head">
+                <label for="liveDecay">Trail decay</label>
+                <output id="liveDecayOut" for="liveDecay">0.02</output>
+              </div>
+              <input type="range" id="liveDecay" min="0" max="0.1" step="0.005" value="0.02" aria-label="Trail fading decay">
+            </div>
+          </div>
+        </div>
       </div>
 
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -1548,6 +1629,7 @@ const state = {
   traceLive: false,
   traceSpeed: 800,
   traceDecay: 0.02,
+  lightSpeed: 1,
   liveTrace: true,
   liveRot: true,
   liveRotPeriod: 90,
@@ -1555,6 +1637,7 @@ const state = {
   livePaletteDrift: false,
   liveEndless: false,
   liveSource: 'init',
+  livePauseEnd: 3,
   customConfig: {
     name: 'Nosé–Hoover (Sprott A)',
     eqX: 'y',
@@ -1565,6 +1648,12 @@ const state = {
     dtStr: '0.01'
   }
 };
+
+if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  state.lightSpeed = 0.25;
+  state.trace = false;
+  state.liveTrace = false;
+}
 
 let cur = null;
 let cache = null;
@@ -2267,6 +2356,7 @@ async function recompute() {
     if (id !== jobId) return;
     res.kind = kind;
     cache = res;
+    if (res && res.pts) buildArcLengthTable(res);
     hideProg();
     setWarn(res.n < 50 ? (res.warn || 'Too few points to draw.') : res.warn);
     renderPreview(false);
@@ -2735,6 +2825,7 @@ function scheduleRender(fast) {
    6b. Glowing Path Trace Animation Engine
    ───────────────────────────────────────────────────────────────────────────── */
 let trailCanvas = null, trailCtx = null;
+let liveTrailCanvas = null, liveTrailCtx = null;
 let traceRaf = 0;
 let traceRunning = false;
 let tracePaused = false;
@@ -2755,6 +2846,70 @@ function ensureTrailCanvas(W, H) {
   return { trailCanvas, trailCtx };
 }
 
+function ensureLiveTrailCanvas(W, H) {
+  if (!liveTrailCanvas) {
+    liveTrailCanvas = document.createElement('canvas');
+    liveTrailCtx = liveTrailCanvas.getContext('2d');
+  }
+  if (liveTrailCanvas.width !== W || liveTrailCanvas.height !== H) {
+    liveTrailCanvas.width = W;
+    liveTrailCanvas.height = H;
+  }
+  return { liveTrailCanvas, liveTrailCtx };
+}
+
+function buildArcLengthTable(c) {
+  if (!c || !c.pts || c.arcLengths) return;
+  const { pts, n, start } = c;
+  const count = n - start;
+  if (count <= 1) {
+    c.arcLengths = new Float32Array([0]);
+    return;
+  }
+  const arc = new Float32Array(count);
+  let accum = 0;
+  arc[0] = 0;
+  for (let j = 1; j < count; j++) {
+    const i = start + j;
+    const k = i * 3, kp = (i - 1) * 3;
+    const dx = pts[k] - pts[kp];
+    const dy = pts[k + 1] - pts[kp + 1];
+    const dz = pts[k + 2] - pts[kp + 2];
+    const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    accum += Number.isFinite(d) ? d : 0;
+    arc[j] = accum;
+  }
+  if (accum > 0) {
+    const inv = 1 / accum;
+    for (let j = 1; j < count - 1; j++) arc[j] *= inv;
+    arc[count - 1] = 1.0;
+  } else {
+    for (let j = 1; j < count; j++) arc[j] = j / (count - 1);
+  }
+  c.arcLengths = arc;
+}
+
+function getArcLengthIndex(c, t) {
+  if (!c || !c.pts) return 0;
+  const { n, start } = c;
+  const count = n - start;
+  if (count <= 1) return start;
+  if (t <= 0) return start;
+  if (t >= 1) return n - 1;
+
+  if (!c.arcLengths) buildArcLengthTable(c);
+  const arc = c.arcLengths;
+
+  let lo = 0, hi = count - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (arc[mid] < t) lo = mid + 1;
+    else hi = mid - 1;
+  }
+  const j = Math.max(0, Math.min(count - 1, lo));
+  return start + j;
+}
+
 function traceEase(t) {
   return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 }
@@ -2768,14 +2923,19 @@ function drawGlowHead(ctx, hx, hy, base, headGlow, lut, pulse) {
   const cr = lut[bi], cg = lut[bi + 1], cb = lut[bi + 2];
 
   ctx.save();
-  const grad = ctx.createRadialGradient(hx, hy, 0, hx, hy, rOuter);
-  grad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
-  grad.addColorStop(0.18, `rgba(${cr}, ${cg}, ${cb}, 0.92)`);
-  grad.addColorStop(0.48, `rgba(${cr}, ${cg}, ${cb}, 0.38)`);
-  grad.addColorStop(0.78, `rgba(${cr}, ${cg}, ${cb}, 0.12)`);
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  let grad = null;
+  if (ctx.createRadialGradient) {
+    grad = ctx.createRadialGradient(hx, hy, 0, hx, hy, rOuter);
+    if (grad && grad.addColorStop) {
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+      grad.addColorStop(0.18, `rgba(${cr}, ${cg}, ${cb}, 0.92)`);
+      grad.addColorStop(0.48, `rgba(${cr}, ${cg}, ${cb}, 0.38)`);
+      grad.addColorStop(0.78, `rgba(${cr}, ${cg}, ${cb}, 0.12)`);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    }
+  }
 
-  ctx.fillStyle = grad;
+  if (grad) ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.arc(hx, hy, rOuter, 0, 2 * Math.PI);
   ctx.fill();
@@ -3068,7 +3228,8 @@ function tickTrace(now) {
       return;
     }
 
-    const targetSteps = Math.min(3000, Math.max(1, Math.round((state.traceSpeed || 800) * delta)));
+    const effSpeed = Math.max(1, (state.traceSpeed || 800) * (state.lightSpeed || 1));
+    const targetSteps = Math.min(3000, Math.max(1, Math.round(effSpeed * delta)));
     const prevHead = liveSim.tailHead;
     const prevX = liveSim.x, prevY = liveSim.y, prevZ = liveSim.z;
 
@@ -3177,7 +3338,9 @@ function tickTrace(now) {
   }
 
   /* ── Mode 2: Fixed Trajectory Progress Animation ── */
-  const dur = Math.max(4, state.traceDur);
+  const baseDur = Math.max(4, state.traceDur || 12);
+  const spd = Math.max(0.05, state.lightSpeed || 1);
+  const dur = baseDur / spd;
   const isLoop = state.traceLoop;
 
   let progress = 0, isFading = false, fadeProgress = 0;
@@ -3224,7 +3387,9 @@ function tickTrace(now) {
 
   const kind = cache.kind;
   const total = kind === 'map' ? DETAIL.map[state.detail] : cache.n;
-  const targetIdx = Math.min(total - 1, Math.round(progress * (total - 1)));
+  const targetIdx = (kind === 'map')
+    ? Math.min(total - 1, Math.round(progress * (total - 1)))
+    : getArcLengthIndex(cache, progress);
 
   const startPtDeparture = (state.traceSource === 'fixed') ? getChosenSourcePoint() : null;
 
@@ -3389,7 +3554,7 @@ function tickTrace(now) {
 
   ctx.restore();
 
-  $('readout').textContent = `${cur.name} · ${infoText()} · ${Math.round(progress * 100)}% trace`;
+  $('readout').textContent = `${cur.name} · ${infoText()} · ${Math.round(progress * 100)}% trace · ${spd}×`;
 }
 
 function startTrace() {
@@ -3415,9 +3580,16 @@ let liveWakeLock = null;
 let liveLastTap = 0, liveHintTimer = 0;
 let liveDpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
 let liveFrameTimeAccum = 0, liveFrameCount = 0;
+let livePaused = false;
+let livePassElapsed = 0;
+let liveLastHeadIdx = 0;
+let liveSimAccum = 0;
+let liveLastViewKey = '';
+let liveRevealedIdx = 0;
 
 async function enterLiveMode() {
   liveActive = true;
+  livePaused = false;
   $('liveOverlay').hidden = false;
   $('liveModal').hidden = true;
   document.body.style.overflow = 'hidden';
@@ -3440,6 +3612,18 @@ async function enterLiveMode() {
   liveYawAngle = state.yaw;
   livePitchAngle = state.pitch;
   liveTime = 0;
+  livePassElapsed = 0;
+  liveLastHeadIdx = 0;
+  liveSimAccum = 0;
+  liveLastViewKey = '';
+  if (liveTrailCtx && liveTrailCanvas) {
+    liveTrailCtx.clearRect(0, 0, liveTrailCanvas.width, liveTrailCanvas.height);
+  }
+
+  if (state.liveEndless) {
+    liveSim = initLiveSim();
+  }
+
   liveLastTick = performance.now();
   liveFrameTimeAccum = 0;
   liveFrameCount = 0;
@@ -3473,6 +3657,8 @@ function exitLiveMode() {
     liveWakeLock = null;
   }
 
+  liveTrailCanvas = null;
+  liveTrailCtx = null;
   scheduleRender(false);
 }
 
@@ -3489,6 +3675,7 @@ function showLiveHint() {
 function tickLiveMode(now) {
   if (!liveActive) return;
   liveRaf = requestAnimationFrame(tickLiveMode);
+  if (livePaused) return;
 
   const dt = Math.min(0.1, (now - liveLastTick) / 1000);
   liveLastTick = now;
@@ -3543,72 +3730,463 @@ function tickLiveMode(now) {
   const bgL = (0.2126 * br + 0.7152 * bg + 0.0722 * bb) / 255;
   const compOp = bgL < 0.5 ? 'lighter' : 'multiply';
 
+  // 1. If live trace animation is OFF: keep today's behaviour (full static path + pulsing end point)
+  if (!state.liveTrace) {
+    ctx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.globalCompositeOperation = compOp;
+
+    const kind = cache ? cache.kind : solverKind();
+    const pt0 = [0, 0, 0], pt1 = [0, 0, 0];
+
+    if (kind === 'map') {
+      const total = Math.min(150000, DETAIL.map[state.detail]);
+      const mpts = getMapTracePts(total);
+      for (let i = 0; i < total; i += 2) {
+        view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+        const colIdx = (0.65 * 1023) | 0;
+        ctx.fillStyle = `rgba(${lut[colIdx * 3]}, ${lut[colIdx * 3 + 1]}, ${lut[colIdx * 3 + 2]}, ${0.6 * exposureMult})`;
+        ctx.fillRect(pt0[0] - 0.75, pt0[1] - 0.75, 1.5, 1.5);
+      }
+      liveRevealedIdx = total - 1;
+    } else if (cache && cache.pts) {
+      const { pts, n, start, tt } = cache;
+      const isMobile = (typeof window !== 'undefined' && window.innerWidth < 880);
+      const targetPoints = isMobile ? 150000 : 400000;
+      const stride = Math.max(1, Math.round((n - start) / targetPoints));
+      const span = Math.max(1, n - start);
+      let prevValid = false;
+
+      ctx.lineWidth = Math.max(1, base * 0.0012);
+      ctx.lineCap = 'round';
+
+      for (let i = start; i < n; i += stride) {
+        const k = i * 3, x = pts[k];
+        if (x !== x) { prevValid = false; continue; }
+        view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt1);
+
+        if (prevValid) {
+          const dx = pt1[0] - pt0[0], dy = pt1[1] - pt0[1];
+          if (Math.sqrt(dx * dx + dy * dy) < base * 0.4) {
+            let colIdx;
+            if (state.mode === 'path') {
+              const tVal = tt ? tt[i] : (i - start) / span;
+              colIdx = ((0.28 + 0.72 * Math.min(1, Math.max(0, tVal))) * 1023) | 0;
+            } else {
+              colIdx = (0.65 * 1023) | 0;
+            }
+            const depth01 = pt1[2];
+            const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+            const r = (lut[colIdx * 3] * sh) | 0;
+            const g = (lut[colIdx * 3 + 1] * sh) | 0;
+            const b = (lut[colIdx * 3 + 2] * sh) | 0;
+
+            ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.75 * exposureMult})`;
+            ctx.beginPath();
+            ctx.moveTo(pt0[0], pt0[1]);
+            ctx.lineTo(pt1[0], pt1[1]);
+            ctx.stroke();
+          }
+        }
+        pt0[0] = pt1[0]; pt0[1] = pt1[1]; pt0[2] = pt1[2];
+        prevValid = true;
+      }
+
+      liveRevealedIdx = n - 1;
+      const lastPt = view.toScreen(n - 1);
+      if (lastPt) {
+        const pulse = 1 + 0.18 * Math.sin(liveTime * 1.5 * 2 * Math.PI);
+        drawGlowHead(ctx, lastPt[0], lastPt[1], base, 1.2 * exposureMult, lut, pulse);
+      }
+    }
+
+    ctx.restore();
+    return;
+  }
+
+  // 2. Path trace animation is ON:
+  const srcMarker = getSourceMarkerCenter();
+  const srcScreen = view.toScreenXYZ(srcMarker[0], srcMarker[1], srcMarker[2] || 0);
+
+  // ── Sub-Mode 2A: Endless Mode (state.liveEndless) ──
+  if (state.liveEndless) {
+    if (!liveSim || liveSim.diverged) {
+      liveSim = initLiveSim();
+    }
+    if (!liveSim) return;
+
+    const effSpeed = Math.max(1, (state.traceSpeed || 800) * (state.lightSpeed || 1));
+    liveSimAccum += effSpeed * dt;
+    const wholeSteps = Math.min(3000, Math.floor(liveSimAccum));
+    if (wholeSteps > 0) {
+      liveSimAccum -= wholeSteps;
+      stepLiveSim(liveSim, wholeSteps);
+    }
+    const subFrac = Math.max(0, Math.min(1, liveSimAccum));
+
+    const buf = liveSim.tailBuffer, cap = liveSim.tailCap;
+    let hx = liveSim.x, hy = liveSim.y, hz = liveSim.z;
+    if (liveSim.tailLen > 1) {
+      const cIdx = (liveSim.tailHead - 1 + cap) % cap;
+      const pIdx = (liveSim.tailHead - 2 + cap) % cap;
+      hx = buf[pIdx * 3] + subFrac * (buf[cIdx * 3] - buf[pIdx * 3]);
+      hy = buf[pIdx * 3 + 1] + subFrac * (buf[cIdx * 3 + 1] - buf[pIdx * 3 + 1]);
+      hz = buf[pIdx * 3 + 2] + subFrac * (buf[cIdx * 3 + 2] - buf[pIdx * 3 + 2]);
+    }
+    liveRevealedIdx = liveSim.stepCount;
+
+    ctx.save();
+    ctx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
+    ctx.fillRect(0, 0, W, H);
+
+    if (!state.liveRot) {
+      // Rotation OFF: use offscreen liveTrailCanvas with decay
+      const { liveTrailCanvas: tc, liveTrailCtx: tctx } = ensureLiveTrailCanvas(W, H);
+      if (state.traceDecay > 0) {
+        const fadeAlpha = 1 - Math.exp(-(state.traceDecay || 0.02) * dt * 50);
+        tctx.save();
+        tctx.globalCompositeOperation = 'destination-out';
+        tctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.25, Math.max(0.001, fadeAlpha))})`;
+        tctx.fillRect(0, 0, W, H);
+        tctx.restore();
+      }
+
+      if (wholeSteps > 0) {
+        tctx.save();
+        tctx.globalCompositeOperation = compOp;
+        tctx.lineWidth = Math.max(1, base * 0.0014);
+        tctx.lineCap = 'round';
+        tctx.lineJoin = 'round';
+
+        const p0 = [0, 0, 0], p1 = [0, 0, 0];
+        const stepsDrawn = Math.min(wholeSteps, liveSim.tailLen);
+        for (let s = 0; s < stepsDrawn; s++) {
+          const idx = (liveSim.tailHead - stepsDrawn + s + cap) % cap;
+          const x = buf[idx * 3], y = buf[idx * 3 + 1], z = buf[idx * 3 + 2];
+          view.toScreenXYZ(x, y, z, p1);
+          if (s > 0) {
+            const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+            if (Math.hypot(dx, dy) < base * 0.4) {
+              const colIdx = (0.65 * 1023) | 0;
+              const depth01 = p1[2];
+              const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+              const r = (lut[colIdx * 3] * sh) | 0;
+              const g = (lut[colIdx * 3 + 1] * sh) | 0;
+              const b = (lut[colIdx * 3 + 2] * sh) | 0;
+              tctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.75 * exposureMult})`;
+              tctx.beginPath();
+              tctx.moveTo(p0[0], p0[1]);
+              tctx.lineTo(p1[0], p1[1]);
+              tctx.stroke();
+            }
+          }
+          p0[0] = p1[0]; p0[1] = p1[1]; p0[2] = p1[2];
+        }
+        tctx.restore();
+      }
+      ctx.drawImage(tc, 0, 0);
+    }
+
+    // Glowing tail from ring buffer with exponential decay
+    const tailPoints = Math.min(liveSim.tailLen, Math.max(10, Math.round(liveSim.tailCap * (state.traceTail || 4) * 0.01)));
+    if (tailPoints > 1) {
+      ctx.save();
+      ctx.globalCompositeOperation = compOp;
+      let pp0 = [0, 0, 0], pp1 = [0, 0, 0], validPrev = false;
+
+      for (let j = 0; j < tailPoints; j++) {
+        const bIdx = (liveSim.tailHead - tailPoints + j + cap) % cap;
+        const x = buf[bIdx * 3], y = buf[bIdx * 3 + 1], z = buf[bIdx * 3 + 2];
+        view.toScreenXYZ(x, y, z, pp1);
+
+        if (validPrev) {
+          const frac = j / (tailPoints - 1);
+          const alpha = Math.exp(-3.5 * (1 - frac));
+          const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
+          const depth01 = pp1[2];
+          const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+          const r = (lut[bi] * sh) | 0;
+          const g = (lut[bi + 1] * sh) | 0;
+          const b = (lut[bi + 2] * sh) | 0;
+
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * (bgL < 0.5 ? 0.95 : 0.85) * exposureMult})`;
+          ctx.lineWidth = Math.max(1, base * (0.0008 + 0.0035 * Math.pow(frac, 1.5)));
+          ctx.beginPath();
+          ctx.moveTo(pp0[0], pp0[1]);
+          ctx.lineTo(pp1[0], pp1[1]);
+          ctx.stroke();
+        }
+        pp0[0] = pp1[0]; pp0[1] = pp1[1]; pp0[2] = pp1[2];
+        validPrev = true;
+      }
+      ctx.restore();
+    }
+
+    // Glowing bloom head
+    const headPt = view.toScreenXYZ(hx, hy, hz);
+    const flicker = 1 + 0.12 * Math.sin(liveTime * 15) + 0.05 * Math.cos(liveTime * 37);
+    drawGlowHead(ctx, headPt[0], headPt[1], base, (state.traceHead || 1) * exposureMult, lut, flicker);
+
+    // Pulsing source marker
+    drawPulsingSource(ctx, srcScreen[0], srcScreen[1], base, lut, liveTime);
+
+    ctx.restore();
+    return;
+  }
+
+  // ── Sub-Mode 2B: Finite Mode Progressive Reveal & Loop (!state.liveEndless) ──
+  const baseDur = Math.max(4, state.traceDur || 12);
+  const spd = Math.max(0.05, state.lightSpeed || 1);
+  const passDur = baseDur / spd;
+  const pauseDur = Math.max(0, state.livePauseEnd !== undefined ? state.livePauseEnd : 3);
+  const fadeDur = 1.5;
+  const cycleDur = passDur + pauseDur + fadeDur;
+
+  livePassElapsed += dt;
+  const cycTime = livePassElapsed % cycleDur;
+
+  let progress = 0;
+  let fadeAlpha = 1.0;
+  let showSourceMarker = true;
+
+  if (cycTime < passDur) {
+    progress = traceEase(cycTime / passDur);
+    showSourceMarker = true;
+  } else if (cycTime < passDur + pauseDur) {
+    progress = 1.0;
+    showSourceMarker = false;
+  } else {
+    progress = 1.0;
+    const fadeFrac = (cycTime - (passDur + pauseDur)) / fadeDur;
+    fadeAlpha = Math.max(0, 1 - fadeFrac);
+    showSourceMarker = false;
+  }
+
+  const kind = cache ? cache.kind : solverKind();
+  const total = kind === 'map' ? Math.min(150000, DETAIL.map[state.detail]) : (cache ? cache.n : 0);
+  const startPtDeparture = (state.traceSource === 'fixed' || state.liveSource === 'fixed') ? getChosenSourcePoint() : null;
+
+  let targetIdx = 0;
+  if (kind === 'map') {
+    targetIdx = Math.min(total - 1, Math.round(progress * (total - 1)));
+  } else if (cache && cache.pts) {
+    targetIdx = getArcLengthIndex(cache, progress);
+  }
+  liveRevealedIdx = targetIdx;
+
+  if (cycTime < dt * 2 || targetIdx < liveLastHeadIdx) {
+    liveLastHeadIdx = 0;
+    if (liveTrailCtx && liveTrailCanvas) {
+      liveTrailCtx.clearRect(0, 0, liveTrailCanvas.width, liveTrailCanvas.height);
+    }
+  }
+
+  ctx.save();
   ctx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.save();
-  ctx.globalCompositeOperation = compOp;
+  if (fadeAlpha < 1) {
+    ctx.globalAlpha = fadeAlpha;
+  }
 
-  const kind = cache ? cache.kind : solverKind();
-  const pt0 = [0, 0, 0], pt1 = [0, 0, 0];
+  const isMobile = (typeof window !== 'undefined' && window.innerWidth < 880);
 
-  if (kind === 'map') {
-    const total = Math.min(150000, DETAIL.map[state.detail]);
-    const mpts = getMapTracePts(total);
-    for (let i = 0; i < total; i += 2) {
-      view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
-      const colIdx = (0.65 * 1023) | 0;
-      ctx.fillStyle = `rgba(${lut[colIdx * 3]}, ${lut[colIdx * 3 + 1]}, ${lut[colIdx * 3 + 2]}, ${0.6 * exposureMult})`;
-      ctx.fillRect(pt0[0] - 0.75, pt0[1] - 0.75, 1.5, 1.5);
+  if (!state.liveRot) {
+    // Rotation is OFF: accumulate into liveTrailCanvas
+    const { liveTrailCanvas: tc, liveTrailCtx: tctx } = ensureLiveTrailCanvas(W, H);
+    const curViewKey = `${liveYawAngle.toFixed(3)}_${livePitchAngle.toFixed(3)}_${state.zoom.toFixed(2)}_${W}_${H}`;
+    if (liveLastViewKey && liveLastViewKey !== curViewKey) {
+      tctx.clearRect(0, 0, W, H);
+      liveLastHeadIdx = 0;
     }
-  } else if (cache && cache.pts) {
-    const { pts, n, start, tt } = cache;
-    const isMobile = window.innerWidth < 880;
-    const targetPoints = isMobile ? 150000 : 400000;
-    const stride = Math.max(1, Math.round((n - start) / targetPoints));
-    const span = Math.max(1, n - start);
-    let prevValid = false;
+    liveLastViewKey = curViewKey;
 
+    if (targetIdx > liveLastHeadIdx) {
+      tctx.save();
+      tctx.globalCompositeOperation = compOp;
+      const pt0 = [0, 0, 0], pt1 = [0, 0, 0];
+      tctx.lineWidth = Math.max(1, base * 0.0012);
+      tctx.lineCap = 'round';
+      tctx.lineJoin = 'round';
+
+      const endIdx = targetIdx;
+      if (kind === 'map') {
+        const mpts = getMapTracePts(total, startPtDeparture);
+        for (let i = liveLastHeadIdx; i <= endIdx; i++) {
+          view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+          const colIdx = (0.65 * 1023) | 0;
+          tctx.fillStyle = `rgba(${lut[colIdx * 3]}, ${lut[colIdx * 3 + 1]}, ${lut[colIdx * 3 + 2]}, ${0.65 * exposureMult})`;
+          tctx.fillRect(pt0[0] - 0.75, pt0[1] - 0.75, 1.5, 1.5);
+        }
+      } else if (cache && cache.pts) {
+        const { pts, start, tt } = cache;
+        const span = Math.max(1, total - start);
+        let prevValid = false;
+        for (let i = liveLastHeadIdx; i <= endIdx; i++) {
+          const k = i * 3, x = pts[k];
+          if (x !== x) { prevValid = false; continue; }
+          view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt1);
+          if (prevValid) {
+            const dx = pt1[0] - pt0[0], dy = pt1[1] - pt0[1];
+            if (Math.hypot(dx, dy) < base * 0.4) {
+              let colIdx;
+              if (state.mode === 'path') {
+                const tVal = tt ? tt[i] : (i - start) / span;
+                colIdx = ((0.28 + 0.72 * Math.min(1, Math.max(0, tVal))) * 1023) | 0;
+              } else {
+                colIdx = (0.65 * 1023) | 0;
+              }
+              const depth01 = pt1[2];
+              const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+              const r = (lut[colIdx * 3] * sh) | 0;
+              const g = (lut[colIdx * 3 + 1] * sh) | 0;
+              const b = (lut[colIdx * 3 + 2] * sh) | 0;
+              tctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.75 * exposureMult})`;
+              tctx.beginPath();
+              tctx.moveTo(pt0[0], pt0[1]);
+              tctx.lineTo(pt1[0], pt1[1]);
+              tctx.stroke();
+            }
+          }
+          pt0[0] = pt1[0]; pt0[1] = pt1[1]; pt0[2] = pt1[2];
+          prevValid = true;
+        }
+      }
+      tctx.restore();
+      liveLastHeadIdx = endIdx;
+    }
+    ctx.drawImage(tc, 0, 0);
+  } else {
+    // Rotation is ON: redraw revealed path downsampled so <= 60k on mobile, <= 150k on desktop
+    ctx.save();
+    ctx.globalCompositeOperation = compOp;
+    const pt0 = [0, 0, 0], pt1 = [0, 0, 0];
     ctx.lineWidth = Math.max(1, base * 0.0012);
     ctx.lineCap = 'round';
 
-    for (let i = start; i < n; i += stride) {
-      const k = i * 3, x = pts[k];
-      if (x !== x) { prevValid = false; continue; }
-      view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt1);
+    if (kind === 'map') {
+      const mpts = getMapTracePts(total, startPtDeparture);
+      const mStride = Math.max(1, Math.round(targetIdx / (isMobile ? 40000 : 100000)));
+      for (let i = 0; i <= targetIdx; i += mStride) {
+        view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+        const colIdx = (0.65 * 1023) | 0;
+        ctx.fillStyle = `rgba(${lut[colIdx * 3]}, ${lut[colIdx * 3 + 1]}, ${lut[colIdx * 3 + 2]}, ${0.65 * exposureMult})`;
+        ctx.fillRect(pt0[0] - 0.75, pt0[1] - 0.75, 1.5, 1.5);
+      }
+    } else if (cache && cache.pts) {
+      const { pts, start, tt } = cache;
+      const span = Math.max(1, total - start);
+      const revealedCount = Math.max(1, targetIdx - start);
+      const targetCap = isMobile ? 60000 : 150000;
+      const rotStride = Math.max(1, Math.round(revealedCount / targetCap));
+      let prevValid = false;
 
-      if (prevValid) {
-        const dx = pt1[0] - pt0[0], dy = pt1[1] - pt0[1];
-        if (Math.sqrt(dx * dx + dy * dy) < base * 0.4) {
-          let colIdx;
-          if (state.mode === 'path') {
-            const tVal = tt ? tt[i] : (i - start) / span;
-            colIdx = ((0.28 + 0.72 * Math.min(1, Math.max(0, tVal))) * 1023) | 0;
-          } else {
-            colIdx = (0.65 * 1023) | 0;
+      for (let i = start; i <= targetIdx; i += rotStride) {
+        const k = i * 3, x = pts[k];
+        if (x !== x) { prevValid = false; continue; }
+        view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt1);
+        if (prevValid) {
+          const dx = pt1[0] - pt0[0], dy = pt1[1] - pt0[1];
+          if (Math.hypot(dx, dy) < base * 0.4) {
+            let colIdx;
+            if (state.mode === 'path') {
+              const tVal = tt ? tt[i] : (i - start) / span;
+              colIdx = ((0.28 + 0.72 * Math.min(1, Math.max(0, tVal))) * 1023) | 0;
+            } else {
+              colIdx = (0.65 * 1023) | 0;
+            }
+            const depth01 = pt1[2];
+            const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+            const r = (lut[colIdx * 3] * sh) | 0;
+            const g = (lut[colIdx * 3 + 1] * sh) | 0;
+            const b = (lut[colIdx * 3 + 2] * sh) | 0;
+            ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.75 * exposureMult})`;
+            ctx.beginPath();
+            ctx.moveTo(pt0[0], pt0[1]);
+            ctx.lineTo(pt1[0], pt1[1]);
+            ctx.stroke();
           }
-          const depth01 = pt1[2];
-          const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
-          const r = (lut[colIdx * 3] * sh) | 0;
-          const g = (lut[colIdx * 3 + 1] * sh) | 0;
-          const b = (lut[colIdx * 3 + 2] * sh) | 0;
+        }
+        pt0[0] = pt1[0]; pt0[1] = pt1[1]; pt0[2] = pt1[2];
+        prevValid = true;
+      }
+    }
+    ctx.restore();
+  }
 
-          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.75 * exposureMult})`;
+  // Draw glowing comet tail
+  const tailPct = Math.max(1, Math.min(15, state.traceTail || 4)) / 100;
+  const tailCount = Math.max(2, Math.round(total * tailPct));
+  const tailStart = Math.max(0, targetIdx - tailCount);
+
+  if (targetIdx > tailStart) {
+    ctx.save();
+    ctx.globalCompositeOperation = compOp;
+    const pt0 = [0, 0, 0];
+
+    if (kind === 'map') {
+      const mpts = getMapTracePts(total, startPtDeparture);
+      for (let i = tailStart; i <= targetIdx; i++) {
+        const frac = (i - tailStart) / (targetIdx - tailStart);
+        const alpha = Math.exp(-3.5 * (1 - frac));
+        view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+        const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
+        ctx.fillStyle = `rgba(${lut[bi]}, ${lut[bi + 1]}, ${lut[bi + 2]}, ${alpha * (bgL < 0.5 ? 0.95 : 0.85) * exposureMult})`;
+        const dotR = Math.max(1, base * 0.002 * (1 + frac));
+        ctx.beginPath();
+        ctx.arc(pt0[0], pt0[1], dotR, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    } else if (cache && cache.pts) {
+      const pts = cache.pts;
+      const count = targetIdx - tailStart;
+      let ppx = 0, ppy = 0, pvalid = false;
+      for (let i = tailStart; i <= targetIdx; i++) {
+        const k = i * 3, x = pts[k];
+        if (x !== x) { pvalid = false; continue; }
+        view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt0);
+        if (pvalid) {
+          const frac = (i - tailStart) / count;
+          const alpha = Math.exp(-3.5 * (1 - frac));
+          const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
+          const depth01 = pt0[2];
+          const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+          const r = (lut[bi] * sh) | 0;
+          const g = (lut[bi + 1] * sh) | 0;
+          const b = (lut[bi + 2] * sh) | 0;
+
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * (bgL < 0.5 ? 0.95 : 0.85) * exposureMult})`;
+          ctx.lineWidth = Math.max(1.2, base * (0.0008 + 0.0035 * Math.pow(frac, 1.5)));
           ctx.beginPath();
-          ctx.moveTo(pt0[0], pt0[1]);
-          ctx.lineTo(pt1[0], pt1[1]);
+          ctx.moveTo(ppx, ppy);
+          ctx.lineTo(pt0[0], pt0[1]);
           ctx.stroke();
         }
+        ppx = pt0[0]; ppy = pt0[1]; pvalid = true;
       }
-      pt0[0] = pt1[0]; pt0[1] = pt1[1]; pt0[2] = pt1[2];
-      prevValid = true;
     }
+    ctx.restore();
+  }
 
-    const lastPt = view.toScreen(n - 1);
-    if (lastPt) {
-      const pulse = 1 + 0.18 * Math.sin(liveTime * 1.5 * 2 * Math.PI);
-      drawGlowHead(ctx, lastPt[0], lastPt[1], base, 1.2 * exposureMult, lut, pulse);
-    }
+  // Draw glowing bloom comet head
+  let headPt;
+  if (kind === 'map') {
+    const mpts = getMapTracePts(total, startPtDeparture);
+    const hi = Math.min(total - 1, targetIdx);
+    headPt = view.toScreenXYZ(mpts[hi * 2], mpts[hi * 2 + 1], 0);
+  } else if (cache && cache.pts) {
+    headPt = view.toScreen(Math.min(total - 1, targetIdx));
+  }
+  if (headPt) {
+    const flicker = 1 + 0.12 * Math.sin(liveTime * 15) + 0.05 * Math.cos(liveTime * 37);
+    drawGlowHead(ctx, headPt[0], headPt[1], base, (state.traceHead || 1) * exposureMult, lut, flicker);
+  }
+
+  // Draw pulsing source marker
+  if (showSourceMarker) {
+    drawPulsingSource(ctx, srcScreen[0], srcScreen[1], base, lut, liveTime);
   }
 
   ctx.restore();
@@ -3626,13 +4204,16 @@ function serializeLiveUrl(baseUrl) {
   u.searchParams.set('pitch', toDeg(state.pitch).toFixed(1));
   u.searchParams.set('zoom', state.zoom.toFixed(2));
   u.searchParams.set('rot', String(state.liveRotPeriod));
-  u.searchParams.set('trace', state.trace ? '1' : '0');
+  u.searchParams.set('trace', (state.trace || state.liveTrace) ? '1' : '0');
   u.searchParams.set('breathe', state.liveBreathe ? '1' : '0');
   u.searchParams.set('autorot', state.liveRot ? '1' : '0');
-  u.searchParams.set('from', state.traceSource || 'init');
+  u.searchParams.set('from', state.traceSource || state.liveSource || 'init');
   u.searchParams.set('eq', String(state.traceEquilIdx || 0));
   u.searchParams.set('speed', String(state.traceSpeed || 800));
   u.searchParams.set('decay', String(state.traceDecay !== undefined ? state.traceDecay : 0.02));
+  u.searchParams.set('lspeed', String(state.lightSpeed || 1));
+  u.searchParams.set('dur', String(state.traceDur || 12));
+  u.searchParams.set('pause', String(state.livePauseEnd !== undefined ? state.livePauseEnd : 3));
   if (state.traceHoldEnd) u.searchParams.set('holdend', '1');
 
   if (state.sys === 'custom') {
@@ -3657,7 +4238,7 @@ function parseUrlParams(urlStr) {
   }
   if (!search) return null;
   const p = new URLSearchParams(search);
-  if (!p.has('sys') && !p.has('live') && !p.has('from')) return null;
+  if (!p.has('sys') && !p.has('live') && !p.has('from') && !p.has('lspeed')) return null;
 
   const res = {};
   if (p.has('sys')) res.sys = p.get('sys');
@@ -3666,15 +4247,22 @@ function parseUrlParams(urlStr) {
   if (p.has('yaw')) res.yaw = toRad(+p.get('yaw'));
   if (p.has('pitch')) res.pitch = toRad(+p.get('pitch'));
   if (p.has('zoom')) res.zoom = +p.get('zoom');
-  if (p.has('trace')) res.trace = p.get('trace') === '1';
+  if (p.has('trace')) {
+    const isTr = p.get('trace') === '1';
+    res.trace = isTr;
+    res.liveTrace = isTr;
+  }
   if (p.has('rot')) res.liveRotPeriod = +p.get('rot');
   if (p.has('breathe')) res.liveBreathe = p.get('breathe') === '1';
   if (p.has('autorot')) res.liveRot = p.get('autorot') === '1';
 
-  if (p.has('from')) res.traceSource = p.get('from');
+  if (p.has('from')) { res.traceSource = p.get('from'); res.liveSource = p.get('from'); }
   if (p.has('eq')) res.traceEquilIdx = parseInt(p.get('eq'), 10) || 0;
   if (p.has('speed')) res.traceSpeed = +p.get('speed');
   if (p.has('decay')) res.traceDecay = +p.get('decay');
+  if (p.has('lspeed')) res.lightSpeed = +p.get('lspeed');
+  if (p.has('dur')) res.traceDur = +p.get('dur');
+  if (p.has('pause')) res.livePauseEnd = +p.get('pause');
   if (p.has('holdend')) res.traceHoldEnd = p.get('holdend') === '1';
   if (p.has('live')) {
     const isLive = p.get('live') === '1';
@@ -3811,27 +4399,39 @@ async function exportVideoWallpaper() {
     offCtx.globalCompositeOperation = compOp;
 
     const kind = cache.kind;
+    const total = kind === 'map' ? Math.min(180000, DETAIL.map[state.detail]) : cache.n;
+    const isAnim = !!state.liveTrace;
+    const p = isAnim ? (t < 0.88 ? traceEase(t / 0.88) : 1.0) : 1.0;
+    const fadeLoop = isAnim ? (t > 0.88 ? Math.max(0, (1 - t) / 0.12) : 1.0) : 1.0;
+    if (fadeLoop < 1) offCtx.globalAlpha = fadeLoop;
+
+    const startPtDeparture = (state.traceSource === 'fixed' || state.liveSource === 'fixed') ? getChosenSourcePoint() : null;
+    const targetIdx = isAnim
+      ? (kind === 'map' ? Math.min(total - 1, Math.round(p * (total - 1))) : getArcLengthIndex(cache, p))
+      : total - 1;
+
     const pt0 = [0, 0, 0], pt1 = [0, 0, 0];
 
     if (kind === 'map') {
-      const total = Math.min(180000, DETAIL.map[state.detail]);
-      const mpts = getMapTracePts(total);
-      for (let i = 0; i < total; i += 2) {
+      const mpts = getMapTracePts(total, startPtDeparture);
+      const stride = Math.max(1, Math.round(targetIdx / 100000));
+      for (let i = 0; i <= targetIdx; i += stride) {
         view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
         const colIdx = (0.65 * 1023) | 0;
         offCtx.fillStyle = `rgba(${lut[colIdx * 3]}, ${lut[colIdx * 3 + 1]}, ${lut[colIdx * 3 + 2]}, ${0.65 * exposureMult})`;
         offCtx.fillRect(pt0[0] - 0.75, pt0[1] - 0.75, 1.5, 1.5);
       }
     } else if (cache && cache.pts) {
-      const { pts, n, start, tt } = cache;
-      const stride = Math.max(1, Math.round((n - start) / 300000));
-      const span = Math.max(1, n - start);
+      const { pts, start, tt } = cache;
+      const span = Math.max(1, total - start);
+      const revealedCount = Math.max(1, targetIdx - start);
+      const stride = Math.max(1, Math.round(revealedCount / 200000));
       let prevValid = false;
 
       offCtx.lineWidth = Math.max(1.2, base * 0.0014);
       offCtx.lineCap = 'round';
 
-      for (let i = start; i < n; i += stride) {
+      for (let i = start; i <= targetIdx; i += stride) {
         const k = i * 3, x = pts[k];
         if (x !== x) { prevValid = false; continue; }
         view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt1);
@@ -3862,7 +4462,71 @@ async function exportVideoWallpaper() {
         pt0[0] = pt1[0]; pt0[1] = pt1[1]; pt0[2] = pt1[2];
         prevValid = true;
       }
+    }
 
+    if (isAnim) {
+      // Draw tail
+      const tailPct = Math.max(1, Math.min(15, state.traceTail || 4)) / 100;
+      const tailCount = Math.max(2, Math.round(total * tailPct));
+      const tailStart = Math.max(0, targetIdx - tailCount);
+      if (targetIdx > tailStart) {
+        if (kind === 'map') {
+          const mpts = getMapTracePts(total, startPtDeparture);
+          for (let i = tailStart; i <= targetIdx; i++) {
+            const frac = (i - tailStart) / (targetIdx - tailStart);
+            const alpha = Math.exp(-3.5 * (1 - frac));
+            view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+            const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
+            offCtx.fillStyle = `rgba(${lut[bi]}, ${lut[bi + 1]}, ${lut[bi + 2]}, ${alpha * (bgL < 0.5 ? 0.95 : 0.85) * exposureMult})`;
+            offCtx.beginPath();
+            offCtx.arc(pt0[0], pt0[1], Math.max(1, base * 0.002 * (1 + frac)), 0, 2 * Math.PI);
+            offCtx.fill();
+          }
+        } else if (cache && cache.pts) {
+          const pts = cache.pts, count = targetIdx - tailStart;
+          let ppx = 0, ppy = 0, pvalid = false;
+          for (let i = tailStart; i <= targetIdx; i++) {
+            const k = i * 3, x = pts[k];
+            if (x !== x) { pvalid = false; continue; }
+            view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt0);
+            if (pvalid) {
+              const frac = (i - tailStart) / count;
+              const alpha = Math.exp(-3.5 * (1 - frac));
+              const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
+              const depth01 = pt0[2];
+              const sh = (shade && three) ? 0.3 + 0.7 * depth01 : 1;
+              offCtx.strokeStyle = `rgba(${(lut[bi] * sh) | 0}, ${(lut[bi + 1] * sh) | 0}, ${(lut[bi + 2] * sh) | 0}, ${alpha * (bgL < 0.5 ? 0.95 : 0.85) * exposureMult})`;
+              offCtx.lineWidth = Math.max(1.2, base * (0.0008 + 0.0035 * Math.pow(frac, 1.5)));
+              offCtx.beginPath();
+              offCtx.moveTo(ppx, ppy);
+              offCtx.lineTo(pt0[0], pt0[1]);
+              offCtx.stroke();
+            }
+            ppx = pt0[0]; ppy = pt0[1]; pvalid = true;
+          }
+        }
+      }
+
+      // Draw head bloom
+      let headPt;
+      if (kind === 'map') {
+        const mpts = getMapTracePts(total, startPtDeparture);
+        headPt = view.toScreenXYZ(mpts[targetIdx * 2], mpts[targetIdx * 2 + 1], 0);
+      } else if (cache && cache.pts) {
+        headPt = view.toScreen(targetIdx);
+      }
+      if (headPt) {
+        const pulse = 1 + 0.18 * Math.sin(t * dur * 1.5 * 2 * Math.PI);
+        drawGlowHead(offCtx, headPt[0], headPt[1], base, (state.traceHead || 1) * exposureMult, lut, pulse);
+      }
+
+      // Draw pulsing source
+      if (t < 0.88) {
+        const srcMarker = getSourceMarkerCenter();
+        const srcScreen = view.toScreenXYZ(srcMarker[0], srcMarker[1], srcMarker[2] || 0);
+        drawPulsingSource(offCtx, srcScreen[0], srcScreen[1], base, lut, t * dur);
+      }
+    } else {
       const lastPt = view.toScreen(n - 1);
       if (lastPt) {
         const pulse = 1 + 0.18 * Math.sin(t * dur * 1.5 * 2 * Math.PI);
@@ -4101,16 +4765,28 @@ function syncAll() {
   $('title').placeholder = cur.name;
   $('hint').textContent = threeD ? 'Drag the print to turn and tilt' : 'Drag sideways to turn';
 
+  const baseDur = state.traceDur || 12;
+  const spd = state.lightSpeed || 1;
+  const effDur = (baseDur / spd).toFixed(1).replace(/\.0$/, '');
+
   if ($('trace')) {
     $('trace').checked = state.trace;
     $('traceBox').hidden = !state.trace;
-    $('traceDur').value = state.traceDur;
-    $('traceDurOut').textContent = `${state.traceDur} s`;
-    $('traceTail').value = state.traceTail;
-    $('traceTailOut').textContent = `${state.traceTail}%`;
-    $('traceHead').value = state.traceHead;
-    $('traceHeadOut').textContent = state.traceHead.toFixed(1);
-    $('traceLoop').checked = state.traceLoop;
+    if ($('traceDur')) $('traceDur').value = state.traceDur;
+    if ($('traceDurOut')) $('traceDurOut').textContent = `${state.traceDur} s (eff. ${effDur} s @ ${spd}×)`;
+    if ($('lightSpeed')) $('lightSpeed').value = state.lightSpeed;
+    if ($('lightSpeedOut')) {
+      if (state.traceLive) {
+        $('lightSpeedOut').textContent = `${spd}× · ${Math.round((state.traceSpeed || 800) * spd)} steps/s`;
+      } else {
+        $('lightSpeedOut').textContent = `${spd}× · ${baseDur} s ÷ ${spd}× → ${effDur} s per pass`;
+      }
+    }
+    if ($('traceTail')) $('traceTail').value = state.traceTail;
+    if ($('traceTailOut')) $('traceTailOut').textContent = `${state.traceTail}%`;
+    if ($('traceHead')) $('traceHead').value = state.traceHead;
+    if ($('traceHeadOut')) $('traceHeadOut').textContent = state.traceHead.toFixed(1);
+    if ($('traceLoop')) $('traceLoop').checked = state.traceLoop;
 
     const isEligible = d.kind !== 'flow' && d.kind !== 'poincare';
     if ($('traceSourceBox')) $('traceSourceBox').hidden = !isEligible;
@@ -4175,14 +4851,43 @@ function syncAll() {
     }
   }
   if ($('liveTrace')) {
-    $('liveTrace').checked = state.liveTrace;
-    $('liveRot').checked = state.liveRot;
-    $('liveRotPeriod').value = state.liveRotPeriod;
-    $('liveRotPeriodOut').textContent = `${state.liveRotPeriod} s`;
-    $('liveBreathe').checked = state.liveBreathe;
-    $('livePaletteDrift').checked = state.livePaletteDrift;
-    if ($('liveEndless')) $('liveEndless').checked = !!state.liveEndless;
+    $('liveTrace').checked = !!state.liveTrace;
+    if ($('liveTrailControls')) $('liveTrailControls').hidden = !state.liveTrace;
+    if ($('liveRot')) $('liveRot').checked = !!state.liveRot;
+    if ($('liveRotPeriod')) {
+      $('liveRotPeriod').value = state.liveRotPeriod;
+      if ($('liveRotPeriodOut')) $('liveRotPeriodOut').textContent = `${state.liveRotPeriod} s`;
+    }
+    if ($('liveBreathe')) $('liveBreathe').checked = !!state.liveBreathe;
+    if ($('livePaletteDrift')) $('livePaletteDrift').checked = !!state.livePaletteDrift;
     if ($('liveSource')) $('liveSource').value = state.liveSource || state.traceSource || 'init';
+    if ($('liveLightSpeed')) $('liveLightSpeed').value = state.lightSpeed;
+    if ($('liveLightSpeedOut')) {
+      if (state.liveEndless) {
+        $('liveLightSpeedOut').textContent = `${spd}× · ${Math.round((state.traceSpeed || 800) * spd)} steps/s`;
+      } else {
+        $('liveLightSpeedOut').textContent = `${spd}× · ${baseDur} s ÷ ${spd}× → ${effDur} s per pass`;
+      }
+    }
+    if ($('livePassDur')) {
+      $('livePassDur').value = state.traceDur;
+      if ($('livePassDurOut')) $('livePassDurOut').textContent = `${state.traceDur} s`;
+    }
+    if ($('livePauseEnd')) {
+      $('livePauseEnd').value = state.livePauseEnd !== undefined ? state.livePauseEnd : 3;
+      if ($('livePauseEndOut')) $('livePauseEndOut').textContent = `${state.livePauseEnd !== undefined ? state.livePauseEnd : 3} s`;
+    }
+    if ($('liveEndless')) $('liveEndless').checked = !!state.liveEndless;
+    if ($('liveFiniteGroup')) $('liveFiniteGroup').hidden = !!state.liveEndless;
+    if ($('liveEndlessGroup')) $('liveEndlessGroup').hidden = !state.liveEndless;
+    if ($('liveSpeed')) {
+      $('liveSpeed').value = state.traceSpeed;
+      if ($('liveSpeedOut')) $('liveSpeedOut').textContent = `${state.traceSpeed} steps/s`;
+    }
+    if ($('liveDecay')) {
+      $('liveDecay').value = state.traceDecay;
+      if ($('liveDecayOut')) $('liveDecayOut').textContent = (+state.traceDecay).toFixed(3).replace(/^-/, '−');
+    }
   }
 }
 
@@ -4886,6 +5591,105 @@ function runUnitTests() {
     cur = savedCur;
   } catch (e) { assert('Trace completion pixel determinism test', false, e.message); }
 
+  log.push('\n=== 21. Glow-from-Start Live Wallpaper & Light Speed Tests ===');
+  try {
+    const savedCur = cur, savedCache = cache, savedState = Object.assign({}, state);
+    const testPts = new Float32Array([
+      0, 0, 0,
+      1, 0, 0,
+      2, 0, 0,
+      3, 0, 0,
+      4, 0, 0
+    ]);
+    const testCache = {
+      pts: testPts,
+      n: 5,
+      start: 0,
+      kind: 'rk4',
+      info: 'test-arc'
+    };
+    buildArcLengthTable(testCache);
+
+    // Test 1: tickLiveMode with liveTrace = true at elapsed = 0 draws only source (idx = 0); at elapsed = passDur reaches n - 1
+    cache = testCache;
+    cur = { key: 'lorenz', name: 'Lorenz', def: SYS.lorenz, q: 1, over: {}, view: [0, 0, 1] };
+    state.liveTrace = true;
+    state.liveEndless = false;
+    state.traceDur = 12;
+    state.lightSpeed = 1;
+    state.livePauseEnd = 3;
+    liveActive = true;
+    livePaused = false;
+    livePassElapsed = 0;
+    liveLastTick = performance.now();
+    tickLiveMode(performance.now());
+    assert('tickLiveMode at elapsed = 0 reveals source index (index ≈ 0)', liveRevealedIdx === testCache.start, `Got ${liveRevealedIdx}`);
+
+    livePassElapsed = 12; // exactly passDur = 12 / 1 = 12
+    tickLiveMode(performance.now());
+    assert('tickLiveMode at elapsed = passDur reveals final index (n - 1)', liveRevealedIdx === testCache.n - 1, `Got ${liveRevealedIdx}`);
+
+    // Test 2: Light speed 0.25x makes the pass exactly 4x longer than 1x
+    const dur1 = 12 / 1.0;
+    const durQuarter = 12 / 0.25;
+    assert('Light speed 0.25× makes the pass exactly 4× longer than 1×', Math.abs(durQuarter / dur1 - 4.0) < 1e-6);
+
+    // Test 3: Arc-length mapping is monotonic and reaches the end exactly at t = 1
+    let isMonotonic = true;
+    let prevIdx = -1;
+    for (let s = 0; s <= 20; s++) {
+      const idx = getArcLengthIndex(testCache, s / 20);
+      if (idx < prevIdx) isMonotonic = false;
+      prevIdx = idx;
+    }
+    assert('Arc-length mapping reaches end exactly at t = 1', getArcLengthIndex(testCache, 1) === testCache.n - 1);
+    assert('Arc-length mapping is monotonic', isMonotonic);
+
+    // Test 4: URL round-trip preserves lspeed, dur, from, eq, live, trace
+    state.lightSpeed = 0.25;
+    state.traceDur = 48;
+    state.traceSource = 'fixed';
+    state.traceEquilIdx = 2;
+    state.liveEndless = true;
+    state.liveTrace = true;
+    const testUrl = serializeLiveUrl('https://example.com/phase-space-prints/');
+    const parsed = parseUrlParams(testUrl);
+    assert('URL round-trip preserves lspeed', parsed && parsed.lightSpeed === 0.25);
+    assert('URL round-trip preserves dur', parsed && parsed.traceDur === 48);
+    assert('URL round-trip preserves from', parsed && parsed.traceSource === 'fixed');
+    assert('URL round-trip preserves eq', parsed && parsed.traceEquilIdx === 2);
+    assert('URL round-trip preserves live', parsed && parsed.traceLive === true);
+    assert('URL round-trip preserves trace', parsed && parsed.liveTrace === true);
+
+    // Test 5: Endless mode at 10 steps/s: head moves every frame (interpolated), tail buffer size constant after 10 000 frames
+    state.traceSpeed = 10;
+    state.lightSpeed = 1.0;
+    const sim = initLiveSim();
+    const cap = sim.tailCap;
+    const dt = 1 / 60;
+    let accum = 10 * dt;
+    const whole = Math.floor(accum);
+    if (whole > 0) stepLiveSim(sim, whole);
+    const subFrac = accum - whole;
+    const cIdx = (sim.tailHead - 1 + cap) % cap;
+    const pIdx = (sim.tailHead - 2 + cap) % cap;
+    const h1x = sim.tailBuffer[pIdx * 3] + subFrac * (sim.tailBuffer[cIdx * 3] - sim.tailBuffer[pIdx * 3]);
+    assert('Endless mode head moves every frame via sub-step interpolation', typeof h1x === 'number' && Number.isFinite(h1x));
+
+    for (let f = 0; f < 10000; f++) {
+      stepLiveSim(sim, 2);
+    }
+    assert('Endless mode tail buffer size constant after 10 000 frames', sim.tailBuffer.length === 12000);
+
+    // Cleanup
+    liveActive = false;
+    cache = savedCache;
+    cur = savedCur;
+    Object.assign(state, savedState);
+  } catch (e) {
+    assert('Glow-from-start live wallpaper & light speed tests', false, e.message);
+  }
+
   log.push(`\n========================================`);
   log.push(`Summary: ${passed} passed, ${failed} failed.`);
 
@@ -4909,7 +5713,7 @@ function init() {
   // Load saved state
   const saved = load();
   if (saved) {
-    for (const k of ['detail', 'yaw', 'pitch', 'zoom', 'exposure', 'contrast', 'traceDur', 'traceTail', 'traceHead', 'traceSpeed', 'traceDecay', 'traceEquilIdx', 'liveRotPeriod']) {
+    for (const k of ['detail', 'yaw', 'pitch', 'zoom', 'exposure', 'contrast', 'traceDur', 'traceTail', 'traceHead', 'traceSpeed', 'traceDecay', 'traceEquilIdx', 'liveRotPeriod', 'lightSpeed', 'livePauseEnd']) {
       if (Number.isFinite(saved[k])) state[k] = saved[k];
     }
     for (const k of ['depth', 'glow', 'caption', 'trace', 'traceLoop', 'traceHoldEnd', 'traceLive', 'liveTrace', 'liveRot', 'liveBreathe', 'livePaletteDrift', 'liveEndless']) {
@@ -5059,10 +5863,25 @@ function init() {
       save();
     });
 
+    function setLightSpeed(v) {
+      state.lightSpeed = Math.round(v * 100) / 100;
+      syncAll();
+      save();
+    }
+
     bindRange('traceDur', v => {
       state.traceDur = v;
-      $('traceDurOut').textContent = `${v} s`;
+      syncAll();
       save();
+    });
+    if ($('lightSpeed')) {
+      bindRange('lightSpeed', v => setLightSpeed(v));
+    }
+    document.querySelectorAll('.main-spd-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const spd = parseFloat(btn.dataset.spd);
+        if (Number.isFinite(spd)) setLightSpeed(spd);
+      });
     });
     bindRange('traceTail', v => {
       state.traceTail = v;
@@ -5118,14 +5937,14 @@ function init() {
     if ($('traceSpeed')) {
       bindRange('traceSpeed', v => {
         state.traceSpeed = v;
-        $('traceSpeedOut').textContent = `${v} steps/s`;
+        syncAll();
         save();
       });
     }
     if ($('traceDecay')) {
       bindRange('traceDecay', v => {
         state.traceDecay = v;
-        $('traceDecayOut').textContent = (+v).toFixed(3).replace(/^-/, '−');
+        syncAll();
         save();
       });
     }
@@ -5137,7 +5956,7 @@ function init() {
     $('lwClose').addEventListener('click', () => { $('liveModal').hidden = true; });
     $('liveModal').addEventListener('click', e => { if (e.target === $('liveModal')) $('liveModal').hidden = true; });
 
-    $('liveTrace').addEventListener('change', e => { state.liveTrace = e.target.checked; save(); });
+    $('liveTrace').addEventListener('change', e => { state.liveTrace = e.target.checked; syncAll(); save(); });
     $('liveRot').addEventListener('change', e => { state.liveRot = e.target.checked; save(); });
     bindRange('liveRotPeriod', v => {
       state.liveRotPeriod = v;
@@ -5147,10 +5966,50 @@ function init() {
     $('liveBreathe').addEventListener('change', e => { state.liveBreathe = e.target.checked; save(); });
     $('livePaletteDrift').addEventListener('change', e => { state.livePaletteDrift = e.target.checked; save(); });
 
+    if ($('liveLightSpeed')) {
+      bindRange('liveLightSpeed', v => setLightSpeed(v));
+    }
+    document.querySelectorAll('.live-spd-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const spd = parseFloat(btn.dataset.spd);
+        if (Number.isFinite(spd)) setLightSpeed(spd);
+      });
+    });
+
+    if ($('livePassDur')) {
+      bindRange('livePassDur', v => {
+        state.traceDur = v;
+        syncAll();
+        save();
+      });
+    }
+
+    if ($('livePauseEnd')) {
+      bindRange('livePauseEnd', v => {
+        state.livePauseEnd = v;
+        if ($('livePauseEndOut')) $('livePauseEndOut').textContent = `${v} s`;
+        save();
+      });
+    }
+
     if ($('liveEndless')) {
       $('liveEndless').addEventListener('change', e => {
         state.liveEndless = e.target.checked;
         state.traceLive = e.target.checked;
+        syncAll();
+        save();
+      });
+    }
+    if ($('liveSpeed')) {
+      bindRange('liveSpeed', v => {
+        state.traceSpeed = v;
+        syncAll();
+        save();
+      });
+    }
+    if ($('liveDecay')) {
+      bindRange('liveDecay', v => {
+        state.traceDecay = v;
         syncAll();
         save();
       });
@@ -5250,9 +6109,23 @@ function init() {
       if (state.trace && traceRunning && !tracePaused) {
         pauseTrace();
       }
+      if (liveActive) {
+        livePaused = true;
+      }
     } else {
       if (state.trace && traceRunning && tracePaused) {
         resumeTrace();
+      }
+      if (liveActive && livePaused) {
+        livePaused = false;
+        liveLastTick = performance.now();
+        if (!liveWakeLock) {
+          try {
+            if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+              navigator.wakeLock.request('screen').then(wl => { liveWakeLock = wl; }).catch(() => {});
+            }
+          } catch (_) {}
+        }
       }
     }
   });

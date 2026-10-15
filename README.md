@@ -86,24 +86,59 @@ Phase Space Prints is a standalone, self-contained single-page web app built wit
 
 ---
 
-### 5. 🔴 Live Mode & Wallpaper Integration
-- **Endless Live Mode**:
-  - Integrates on the fly (RK4, Grünwald–Letnikov fractional, discrete map iterations) at user-configured speed (100–4000 steps/sec).
-  - **Dissipative Trail Decay**: Trail decay slider ($0$ to $0.10$) gently dissipates older density so the attractor "breathes" without saturating.
-  - **Bounded Memory Safety**: Tail uses a fixed $4000 \times 3$ circular ring buffer ($O(1)$ memory). Fractional GL history stays strictly capped at $L=1000$.
-  - **Divergence Detection**: Gracefully detects unbounded escape ($|x| + |y| + |z| > 10^6$), prompts with a warning, and offers restart from source.
-  - **Background Pause**: Automatically pauses when the browser tab is hidden (`visibilitychange`) and resumes upon return.
-- **A. Full-Screen Ambient Live Wallpaper**:
-  - Fullscreen display with Screen Wake Lock (`navigator.wakeLock`).
-  - Auto-rotation with pitch wobble and breathing exposure.
-  - **Shareable Live URL**: Restores entire configuration from query parameters:
-    `?sys=lorenz&live=1&from=fixed&eq=1&speed=800&decay=0.02&holdend=1&palette=nebula&mode=path&yaw=30&pitch=-20&zoom=1.1`
-- **B. Looping Video Export**:
-  - Records live or precomputed animations in Phone ($1080 \times 2340$), Desktop ($1920 \times 1080$), or Square ($1080 \times 1080$) at 30 fps via `MediaRecorder` (H.264 MP4 / WebM).
+### 5. 🔴 Live Mode & Glow-from-Start Live Wallpaper
+- **Glow-from-Start Ambient Live Wallpaper (`#liveTrace`)**:
+  - **Finite Progressive Reveal (`#liveEndless` OFF)**:
+    - Light originates at the chosen source ($x_0$ or the chosen equilibrium perturbed along its unstable eigenvector) and travels along the orbit over one pass.
+    - **Luminous Bloom Head**: Radial-gradient bloom with bright core and palette LUT halo (`drawGlowHead`), sized via `traceHead`.
+    - **Comet Tail**: Exponential decay $\alpha(s) = \exp(-3.5(1-s))$ with additive blending (`'lighter'`) on dark palettes and `'multiply'` on light palettes.
+    - **Offscreen Trail Canvas**: Burnt-in trail behind the comet tail accumulates in an offscreen canvas (`liveTrailCanvas`), preventing per-frame redraws of hundreds of thousands of segments.
+    - **Pulsing Source Indicator**: Concentric pulsing marker ring (`drawPulsingSource`) visible while light is travelling.
+    - **End-of-Pass Pause & Fade Loop**: Holds glowing print at the end ("Pause at end", default 3 s), fades out smoothly over ~1.5 s, and loops continuously.
+  - **Endless Live Mode (`#liveEndless` ON)**:
+    - Integrates on the fly (RK4, Grünwald–Letnikov fractional, discrete map iterations) at user-configured speed with sub-step interpolation.
+    - **Dissipative Trail Decay**: Trail decay slider ($0$ to $0.10$) gently dissipates older density so the attractor breathes without saturating.
+    - **Bounded Memory Safety**: Tail uses a fixed $4000 \times 3$ circular ring buffer ($O(1)$ memory). Fractional GL history stays strictly capped at $L=1000$.
+    - **Divergence Auto-Recovery**: Detects unbounded escape ($|x| + |y| + |z| > 10^6$) and automatically restarts cleanly from the source.
+  - **Smooth Auto-Rotation & Breathing Exposure**:
+    - Auto-rotation (`#liveRot`) and breathing exposure operate seamlessly during the animation.
+    - When rotating, dynamically downsamples the revealed path stride ($\le 60\text{k}$ segments/frame on mobile, $\le 150\text{k}$ on desktop) for consistent 60 fps.
+    - Preserves screen wake lock (`navigator.wakeLock`) and pauses on `visibilitychange` (hidden) to conserve battery.
+  - **Maps & Flows**: Supports Clifford and Peter de Jong 2-D maps (iterates revealed progressively) as well as multi-seed flows.
+  - **Video & Lock Screen Exports**:
+    - `exportVideoWallpaper`: Exports seamlessly looping video wallpapers with light travelling along the attractor.
+    - `exportLockScreenPng`: Exports crisp still lock screen wallpapers with the finished frame and blooming head glow.
 
 ---
 
-### 6. Zero `eval` Recursive-Descent Parser
+### 6. 🐢 "Slow the Light" & Light Speed Control
+- **Shared Light Speed Control**:
+  - Synchronized between the main trace panel (`#lightSpeed`) and the live wallpaper modal (`#liveLightSpeed`).
+  - Range from **$0.05\times$ to $2\times$** (logarithmic feel, default $1\times$) with one-click presets:
+    - 🐢 **Very slow 0.1×**
+    - **Slow 0.25×**
+    - **Calm 0.5×**
+    - **Normal 1×**
+    - **Fast 2×**
+- **Finite Mode Duration Scaling**:
+  - Effective pass duration = $\text{base duration} \div \text{lightSpeed}$.
+  - Pass duration (`#traceDur`) range extended up to **600 s (10 minutes)** for tranquil, ultra-slow live wallpapers.
+  - Dynamic readout shows base and effective pass times (e.g. `12 s × 0.25 → 48 s per pass`).
+- **Endless Mode Sub-Step Interpolation**:
+  - Steps per second = $\text{traceSpeed} \times \text{lightSpeed}$ (range down to 10 steps/s).
+  - Time-based fixed sub-step integration interpolating the glowing head position between the last two integrated points every frame for silky motion even at 10 steps/s.
+- **Arc-Length Linear Easing**:
+  - Precomputes cumulative 3-D arc length once per trajectory (`buildArcLengthTable`) and maps elapsed time $\to$ arc length $\to$ point index (`getArcLengthIndex`), ensuring constant physical speed that never appears to stall in dense attractor folds.
+- **Accessibility & Motion Preferences**:
+  - Automatically respects `prefers-reduced-motion`, defaulting light speed to $0.25\times$ and trace OFF unless explicitly enabled.
+- **Shareable Live URL Parameters**:
+  - New parameters: `lspeed` (light speed, e.g. `0.25`), `dur` (base pass duration in seconds, e.g. `48`), `pause` (pause at end, e.g. `3`), `from` (`init` or `fixed`), `eq` (equilibrium index), `live` (`1` or `0`), `trace` (`1` or `0`).
+  - **Example Link**:
+    [https://mdsamhussain1996.github.io/phase-space-prints/?live=1&trace=1&lspeed=0.25&dur=48&pause=3&sys=lorenz&palette=nebula](https://mdsamhussain1996.github.io/phase-space-prints/?live=1&trace=1&lspeed=0.25&dur=48&pause=3&sys=lorenz&palette=nebula)
+
+---
+
+### 7. Zero `eval` Recursive-Descent Parser
 - Grammar: `expr = term { (+|-) term }; term = unary { (*|/|implicit) unary }; unary = (+|-) unary | power; power = primary [^ unary]; primary = number | name | func(args) | (expr)`
 - Implicit multiplication (`2x`, `x(ρ - z)`, `a sin(x)`).
 - Targeted error messages (e.g. `“xy” is read as one name. Write x*y.`).
@@ -117,24 +152,7 @@ Run the built-in test suite in Node.js:
 ```bash
 node test_runner.js
 ```
-Or open the app in a browser and click the **🧪 Test Suite** button in the header. All 57 automated unit tests verify:
-- Operator precedence: $-x^2 = -9$ at $x=3$
-- Power right-associativity: $2^{3^2} = 512$
-- Implicit products and constants ($\pi, e$)
-- Greek constant symbol normalization ($\sigma, \rho$)
-- Targeted error messages and unbalanced brackets
-- Fractional preset boundedness
-- Two-argument functions
-- Nosé–Hoover custom ODE compilation
-- Mismatched initial state and reserved name validations
-- Complete 28-combination format/mode render test matrix
-- View projection & deterministic rendering
-- Lorenz equilibria found by Newton matching analytic three points within $10^{-6}$
-- 3×3 Eigen-classification: Lorenz origin classified as saddle; Clifford & De Jong fixed points $|F(x^*) - x^*| < 10^{-9}$
-- Unstable manifold departure distance growth over 200 RK4 steps
-- Live mode circular ring buffer invariance ($12000$ floats after 100k steps) & fractional GL memory cap $\le L$
-- Full URL parameter round-trip with `from`, `eq`, `speed`, `decay`, `holdend`, `live`
-- Final frame of non-live trace matching static print render (diff = 0)
+Or open the app in a browser and click the **🧪 Test Suite** button in the header. All 70 automated unit tests (including standalone direct Node invariants) verify:
 - Operator precedence: $-x^2 = -9$ at $x=3$
 - Power right-associativity: $2^{3^2} = 512$
 - Implicit products and constants ($\pi, e$)
@@ -146,10 +164,16 @@ Or open the app in a browser and click the **🧪 Test Suite** button in the hea
 - Mismatched initial state and reserved name validations
 - Complete 28-combination format/mode render test matrix
 - `buildView()` view projection and deterministic pixel rendering
-- Trace progress easing and start/end point mapping
-- Shareable live wallpaper URL parameter serialization round-trip
-- `MediaRecorder` MIME selection and fallback
-- Persistent `state` serialization and retrieval for all trace and live parameters
+- Lorenz equilibria found by Newton matching analytic three points within $10^{-6}$
+- 3×3 Eigen-classification: Lorenz origin classified as saddle; Clifford & De Jong fixed points $|F(x^*) - x^*| < 10^{-9}$
+- Unstable manifold departure distance growth over 200 RK4 steps
+- Live mode circular ring buffer invariance ($12000$ floats after 100k steps) & fractional GL memory cap $\le L$
+- Extended URL round-trip with `from`, `eq`, `speed`, `decay`, `holdend`, `live`, `trace`, `lspeed`, `dur`, `pause`
+- Final frame of non-live trace matching static print render (diff = 0)
+- Glow-from-start live wallpaper: at elapsed = 0 reveals source index ($\approx 0$); at elapsed = pass duration reaches $n - 1$
+- Light speed scaling: $0.25\times$ makes pass exactly $4\times$ longer than $1\times$
+- Arc-length mapping monotonicity and exact $t=1$ endpoint convergence
+- Endless mode head movement on every frame via sub-step interpolation and constant buffer allocation after 10,000 frames
 
 ## 🚀 Streamlit Cloud Deployment (`streamlit.app`)
 

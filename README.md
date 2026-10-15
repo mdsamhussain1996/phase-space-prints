@@ -68,7 +68,42 @@ Phase Space Prints is a standalone, self-contained single-page web app built wit
 
 ---
 
-### 4. Zero `eval` Recursive-Descent Parser
+### 4. ✨ "Glowing Path" Trace Animation
+- **Progressive Trajectory Drawing**: Renders the orbit dynamically from its true initial condition $(x_0, y_0, z_0)$.
+- **Luminous Comet Tail & Head**:
+  - Trailing fading tail (1–15% orbit length) rendered with additive/multiply blending and depth shading.
+  - Glowing radial head sprite pulsing gently at 1.5 Hz.
+  - Initial state launch ring indicator fading over the first second.
+- **Controls & Performance**:
+  - Duration range: 4–60 s with ease-in-out time curves.
+  - Offscreen canvas accumulator (`trailCanvas`) capped at 40k points/frame for stable 60 fps rendering on mobile devices and desktop.
+  - Auto-pauses during drag-to-turn/tilt interaction and resumes after 400 ms.
+  - Spacebar = Play/Pause, `R` = Restart (when not focused in inputs).
+  - Respects `prefers-reduced-motion` settings.
+
+---
+
+### 5. 📱 Live Wallpaper & Video Export
+- **A. Full-Screen Ambient Live Mode**:
+  - Fullscreen display (with safe-area inset support on iOS and devices with notches).
+  - Screen Wake Lock (`navigator.wakeLock`) prevents screen dimming during display.
+  - Smooth 360° auto-rotation with gentle $\pm 8^\circ$ pitch wobble and 6-second breathing exposure oscillation.
+  - Tap once to display exit hint; double-tap or Esc to return to the editor.
+  - **Shareable Live URL**: `?live=1&sys=lorenz&palette=nebula&mode=path&yaw=30&pitch=-20&zoom=1.1&rot=90&trace=1` opens straight into live mode.
+- **Desktop Setup**:
+  - **Windows**: In [Lively Wallpaper](https://rocksdanister.github.io/lively/) (free), click *Add Wallpaper* and paste the shareable live link.
+  - **macOS**: In [Plash](https://github.com/sindresorhus/Plash) (free), add the live link as a website wallpaper.
+- **B. Looping Video Export**:
+  - Exports seamless looping video in **Phone** ($1080 \times 2340$), **Desktop** ($1920 \times 1080$), or **Square** ($1080 \times 1080$).
+  - Captures offscreen canvas stream at 30 fps via `MediaRecorder` preferring MP4 (H.264 / `video/mp4;codecs=avc1`), falling back to VP9/VP8 WebM at 12 Mbps.
+  - Generates matching still lock-screen PNGs.
+- **Mobile Setup**:
+  - **Android**: Use a video live wallpaper app (such as *Video Live Wallpaper*) with the downloaded MP4.
+  - **iOS**: Convert the MP4 to a Live Photo with a free converter (such as *intoLive*) and select it in *Settings → Wallpaper*.
+
+---
+
+### 6. Zero `eval` Recursive-Descent Parser
 - Grammar: `expr = term { (+|-) term }; term = unary { (*|/|implicit) unary }; unary = (+|-) unary | power; power = primary [^ unary]; primary = number | name | func(args) | (expr)`
 - Implicit multiplication (`2x`, `x(ρ - z)`, `a sin(x)`).
 - Targeted error messages (e.g. `“xy” is read as one name. Write x*y.`).
@@ -82,17 +117,22 @@ Run the built-in test suite in Node.js:
 ```bash
 node test_runner.js
 ```
-Or open the app in a browser and click the **🧪 Test Suite** button in the header. All 16 automated tests verify:
+Or open the app in a browser and click the **🧪 Test Suite** button in the header. All 36 automated unit tests verify:
 - Operator precedence: $-x^2 = -9$ at $x=3$
 - Power right-associativity: $2^{3^2} = 512$
 - Implicit products and constants ($\pi, e$)
 - Greek constant symbol normalization ($\sigma, \rho$)
-- Targeted error messages
+- Targeted error messages and unbalanced brackets
 - Fractional preset boundedness
 - Two-argument functions
 - Nosé–Hoover custom ODE compilation
 - Mismatched initial state and reserved name validations
 - Complete 28-combination format/mode render test matrix
+- `buildView()` view projection and deterministic pixel rendering
+- Trace progress easing and start/end point mapping
+- Shareable live wallpaper URL parameter serialization round-trip
+- `MediaRecorder` MIME selection and fallback
+- Persistent `state` serialization and retrieval for all trace and live parameters
 
 ## 🚀 Streamlit Cloud Deployment (`streamlit.app`)
 

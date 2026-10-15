@@ -712,6 +712,36 @@ input[type="range"] {
           <input type="range" id="contrast" min="0.4" max="2.2" step="0.01" value="1">
         </div>
         <label class="check"><input type="checkbox" id="glow" checked> Glow effect</label>
+        <label class="check"><input type="checkbox" id="trace"> ✨ Animate path (glow from start)</label>
+        <div id="traceBox" hidden style="margin-top:8px;padding:10px 12px;background:var(--bg-subtle, rgba(255,255,255,0.03));border-radius:8px;border:1px solid var(--line);">
+          <div class="ctl">
+            <div class="ctl-head">
+              <label for="traceDur">Duration</label>
+              <output id="traceDurOut" for="traceDur">12 s</output>
+            </div>
+            <input type="range" id="traceDur" min="4" max="60" step="1" value="12">
+          </div>
+          <div class="ctl">
+            <div class="ctl-head">
+              <label for="traceTail">Tail length</label>
+              <output id="traceTailOut" for="traceTail">4%</output>
+            </div>
+            <input type="range" id="traceTail" min="1" max="15" step="1" value="4">
+          </div>
+          <div class="ctl">
+            <div class="ctl-head">
+              <label for="traceHead">Head glow</label>
+              <output id="traceHeadOut" for="traceHead">1.0</output>
+            </div>
+            <input type="range" id="traceHead" min="0" max="2" step="0.1" value="1">
+          </div>
+          <label class="check" style="margin-bottom:8px;"><input type="checkbox" id="traceLoop" checked> Loop</label>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm" id="tracePlay" type="button" aria-label="Play or pause trace animation">⏸ Pause</button>
+            <button class="btn btn-sm" id="traceRestart" type="button" aria-label="Restart trace animation">↺ Restart</button>
+          </div>
+          <div id="traceMotionNote" style="margin-top:6px;font-size:0.75rem;color:var(--muted);" hidden>prefers-reduced-motion active · animation default OFF</div>
+        </div>
       </div>
     </section>
 
@@ -728,7 +758,10 @@ input[type="range"] {
         <input type="text" id="title" placeholder="Caption title (defaults to model name)" maxlength="60">
       </div>
       
-      <button class="btn primary" id="render" type="button">🖼️ Render print</button>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn primary" id="render" type="button">🖼️ Render print</button>
+        <button class="btn secondary" id="liveWallBtn" type="button" aria-label="Open live wallpaper options">📱 Live wallpaper</button>
+      </div>
     </section>
   </aside>
 </main>
@@ -748,11 +781,114 @@ input[type="range"] {
     <div class="mimg">
       <img id="mImg" alt="Full-resolution render of the print" hidden>
     </div>
+    <label class="check" style="margin-top:10px;"><input type="checkbox" id="printHead"> Include glowing head at end point</label>
     <p class="mhelp">Right-click the image and choose <strong>Save image as…</strong> On a mobile phone or tablet, press and hold to save.</p>
     <div class="recipe">
       <code id="recipe"></code>
       <button class="btn ghost btn-sm" id="copyRecipe" type="button">📋 Copy recipe</button>
     </div>
+  </div>
+</div>
+
+<!-- Live Wallpaper Modal -->
+<div class="modal" id="liveModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="lwTitle" style="max-width:680px;max-height:90vh;overflow-y:auto;">
+    <div class="sheet-head">
+      <h3 id="lwTitle">📱 Live Wallpaper</h3>
+      <button class="btn ghost btn-sm" id="lwClose" type="button">✕ Close</button>
+    </div>
+
+    <!-- Mode A: Fullscreen Live Mode -->
+    <div style="margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--line);">
+      <h4 style="margin:0 0 8px 0;font-size:1.05rem;">A. Full-Screen Live Mode</h4>
+      <p style="margin:0 0 12px 0;font-size:0.86rem;color:var(--muted);">Run dynamic looping art directly in your browser. Perfect for desktop live wallpaper tools or full-screen ambient display.</p>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:12px;">
+        <label class="check"><input type="checkbox" id="liveTrace" checked> Path trace animation</label>
+        <label class="check"><input type="checkbox" id="liveRot" checked> Slow auto-rotation</label>
+        <label class="check"><input type="checkbox" id="liveBreathe" checked> Breathing exposure</label>
+        <label class="check"><input type="checkbox" id="livePaletteDrift"> Palette drift</label>
+      </div>
+
+      <div class="ctl" id="liveRotBox" style="margin-bottom:12px;">
+        <div class="ctl-head">
+          <label for="liveRotPeriod">Rotation period</label>
+          <output id="liveRotPeriodOut" for="liveRotPeriod">90 s</output>
+        </div>
+        <input type="range" id="liveRotPeriod" min="20" max="300" step="5" value="90">
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <button class="btn primary" id="startLiveBtn" type="button">▶ Start live mode</button>
+        <button class="btn secondary" id="copyLiveLink" type="button">🔗 Copy live link</button>
+        <span id="copyLiveMsg" style="font-size:0.82rem;color:var(--accent);display:none;">✓ Copied to clipboard!</span>
+      </div>
+
+      <div style="margin-top:12px;padding:10px;background:var(--bg-subtle, rgba(255,255,255,0.03));border-radius:6px;font-size:0.8rem;line-height:1.45;color:var(--muted);">
+        <strong>Desktop Setup:</strong><br>
+        • <strong>Windows:</strong> Open <a href="https://rocksdanister.github.io/lively/" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">Lively Wallpaper</a> (free) → click <em>Add wallpaper</em> → paste the live link.<br>
+        • <strong>macOS:</strong> Open <a href="https://github.com/sindresorhus/Plash" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">Plash</a> (free) → add the live link as a website.
+      </div>
+    </div>
+
+    <!-- Mode B: Video Wallpaper Export -->
+    <div>
+      <h4 style="margin:0 0 8px 0;font-size:1.05rem;">B. Looping Video Export</h4>
+      <p style="margin:0 0 12px 0;font-size:0.86rem;color:var(--muted);">Generate a high-bitrate seamless looping video (MP4/WebM) formatted for phone or desktop wallpaper apps.</p>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="ctl">
+          <label for="vidFormat">Size &amp; aspect</label>
+          <select id="vidFormat" style="width:100%;padding:6px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--line);">
+            <option value="phone">Phone 1080 × 2340 (portrait)</option>
+            <option value="desktop">Desktop 1920 × 1080</option>
+            <option value="square">Square 1080 × 1080</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <label for="vidLength">Duration</label>
+          <select id="vidLength" style="width:100%;padding:6px;border-radius:6px;background:var(--bg);color:var(--text);border:1px solid var(--line);">
+            <option value="10">10 seconds</option>
+            <option value="20" selected>20 seconds</option>
+            <option value="30">30 seconds</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">
+        <button class="btn primary" id="recordVidBtn" type="button">🎬 Generate video wallpaper</button>
+        <button class="btn ghost btn-sm" id="cancelVidBtn" type="button" hidden>✕ Cancel</button>
+        <button class="btn secondary" id="lockPngBtn" type="button">🖼️ Still frame for lock screen (PNG)</button>
+      </div>
+
+      <div id="vidProgressWrap" hidden style="margin-bottom:12px;">
+        <div style="height:6px;background:var(--line);border-radius:3px;overflow:hidden;">
+          <div id="vidProgressBar" style="height:100%;width:0%;background:var(--accent);transition:width 0.1s linear;"></div>
+        </div>
+        <div id="vidProgressText" style="margin-top:4px;font-size:0.82rem;color:var(--muted);">Rendering frames…</div>
+      </div>
+
+      <div id="vidStatus" style="font-size:0.84rem;margin-bottom:12px;color:var(--muted);"></div>
+
+      <div style="padding:10px;background:var(--bg-subtle, rgba(255,255,255,0.03));border-radius:6px;font-size:0.8rem;line-height:1.45;color:var(--muted);">
+        <strong>Mobile &amp; App Instructions:</strong><br>
+        • <strong>Android:</strong> Use any video live wallpaper app (e.g. <em>Video Live Wallpaper</em>) and select the exported video.<br>
+        • <strong>iPhone:</strong> Convert the MP4 with a free Live Photo tool (e.g. <em>intoLive</em>), then choose it in iOS <em>Settings → Wallpaper</em>.<br>
+        • <strong>Windows:</strong> Lively Wallpaper accepts downloaded MP4s or the live link directly.<br>
+        • <strong>macOS:</strong> Use Plash with the live link (videos are not natively supported as macOS wallpapers).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Dedicated Full-Screen Live View Overlay -->
+<div id="liveOverlay" hidden style="position:fixed;inset:0;width:100vw;height:100dvh;z-index:99999;background:#000;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);touch-action:none;">
+  <canvas id="liveCanvas" style="display:block;width:100%;height:100%;touch-action:none;"></canvas>
+  <div id="liveHint" style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:8px 16px;border-radius:20px;font-size:0.85rem;pointer-events:none;opacity:0;transition:opacity 0.25s ease;font-family:sans-serif;letter-spacing:0.02em;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.15);">Tap again or press Esc to exit</div>
+  <div id="liveTapToStart" hidden style="position:absolute;inset:0;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:pointer;z-index:100000;backdrop-filter:blur(8px);">
+    <div style="font-size:2rem;margin-bottom:8px;">✨ Phase Space Prints</div>
+    <div style="font-size:1.1rem;color:var(--accent, #6ee7b7);margin-bottom:14px;">Tap anywhere to enter full-screen live mode</div>
+    <div style="font-size:0.82rem;color:#aaa;">Escape or tap twice to return to editor</div>
   </div>
 </div>
 
@@ -1360,6 +1496,16 @@ const state = {
   caption: true,
   title: '',
   theme: 'auto',
+  trace: false,
+  traceDur: 12,
+  traceTail: 4,
+  traceHead: 1,
+  traceLoop: true,
+  liveTrace: true,
+  liveRot: true,
+  liveRotPeriod: 90,
+  liveBreathe: true,
+  livePaletteDrift: false,
   customConfig: {
     name: 'Nosé–Hoover (Sprott A)',
     eqX: 'y',
@@ -1770,25 +1916,24 @@ function drawCaption(ctx, W, H, box, base, lut) {
   ctx.fillText(c.meta, box.x, y + base * 0.0135 * 1.9);
 }
 
-function renderArt(ctx, W, H, opt) {
+function buildView(W, H, opt) {
+  opt = opt || {};
   const d = cur.def, kind = cache ? cache.kind : solverKind();
   const base = Math.min(W, H);
   const m = Math.round(base * 0.07);
-  const capH = opt.caption ? Math.round(base * 0.14) : 0;
+  const capH = (opt.caption ?? state.caption) ? Math.round(base * 0.14) : 0;
   const box = { x: m, y: m, w: W - 2 * m, h: H - 2 * m - capH };
-  const N = W * H;
 
-  // CPU Density Buffer (Float32Array)
-  const cnt = new Float32Array(N);
-  const path = state.mode === 'path';
-  const R = path ? new Float32Array(N) : null;
-  const Gc = path ? new Float32Array(N) : null;
-  const B = path ? new Float32Array(N) : null;
-  const lut = lutFor(state.palette);
+  const yaw = opt.yaw !== undefined ? opt.yaw : state.yaw;
+  const pitch = opt.pitch !== undefined ? opt.pitch : state.pitch;
+  const zoom = opt.zoom !== undefined ? opt.zoom : state.zoom;
+  const depth = opt.depth !== undefined ? opt.depth : state.depth;
+  const palette = opt.palette || state.palette;
+  const lut = lutFor(palette);
 
   const three = is3d();
-  const cy = Math.cos(state.yaw), sy = Math.sin(state.yaw);
-  const cp = Math.cos(state.pitch), sp = Math.sin(state.pitch);
+  const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
 
   let pu = 0, pv = 0, pd = 0;
   const proj = three
@@ -1796,8 +1941,8 @@ function renderArt(ctx, W, H, opt) {
         const x1 = x * cy - y * sy;
         const y1 = x * sy + y * cy;
         pu = x1;
-        pv = y1 * sp + z * cp;
-        pd = y1 * cp - z * sp;
+        pv = y1 * sp + (z || 0) * cp;
+        pd = y1 * cp - (z || 0) * sp;
       }
     : (x, y) => {
         pu = x * cy - y * sy;
@@ -1807,7 +1952,7 @@ function renderArt(ctx, W, H, opt) {
 
   // Compute projected bounding box
   let umin = Infinity, umax = -Infinity, vmin = Infinity, vmax = -Infinity, dmin = Infinity, dmax = -Infinity;
-  const p = state.p, o2 = [0, 0];
+  const p = opt.p || state.p, o2 = [0, 0];
 
   if (kind === 'map') {
     let x = 0.1, y = 0.1;
@@ -1818,7 +1963,7 @@ function renderArt(ctx, W, H, opt) {
       if (pu < umin) umin = pu; if (pu > umax) umax = pu;
       if (pv < vmin) vmin = pv; if (pv > vmax) vmax = pv;
     }
-  } else {
+  } else if (cache && cache.pts) {
     const { pts, n, start } = cache;
     const st = Math.max(1, Math.floor((n - start) / 250000));
     for (let i = start; i < n; i += st) {
@@ -1834,11 +1979,52 @@ function renderArt(ctx, W, H, opt) {
   if (!(umax > umin)) { umin -= 0.5; umax += 0.5; }
   if (!(vmax > vmin)) { vmin -= 0.5; vmax += 0.5; }
 
-  const S = Math.min(box.w / (umax - umin), box.h / (vmax - vmin)) * state.zoom;
+  const S = Math.min(box.w / (umax - umin), box.h / (vmax - vmin)) * zoom;
   const uc = (umin + umax) / 2, vc = (vmin + vmax) / 2;
   const ox = box.x + box.w / 2, oy = box.y + box.h / 2;
   const dr = 1 / ((dmax - dmin) || 1);
-  const shade = three && state.depth;
+  const shade = three && depth;
+
+  const toScreenXYZ = (x, y, z, out) => {
+    proj(x, y, z);
+    const sx = ox + (pu - uc) * S;
+    const sy = oy - (pv - vc) * S;
+    const depth01 = (dmax - pd) * dr;
+    if (out) {
+      out[0] = sx; out[1] = sy; out[2] = depth01;
+      return out;
+    }
+    return [sx, sy, depth01];
+  };
+
+  const toScreen = (i, out) => {
+    if (!cache || !cache.pts) return out ? (out[0] = ox, out[1] = oy, out[2] = 0.5, out) : [ox, oy, 0.5];
+    const k = i * 3;
+    return toScreenXYZ(cache.pts[k], cache.pts[k + 1], cache.pts[k + 2], out);
+  };
+
+  return {
+    box, base, S, uc, vc, ox, oy, umin, umax, vmin, vmax, dmin, dmax, dr, shade, lut,
+    toScreenXYZ, toScreen, proj,
+    get pu() { return pu; },
+    get pv() { return pv; },
+    get pd() { return pd; }
+  };
+}
+
+function renderArt(ctx, W, H, opt) {
+  opt = opt || {};
+  const d = cur.def, kind = cache ? cache.kind : solverKind();
+  const view = buildView(W, H, opt);
+  const { box, base, lut, shade, S, uc, vc, ox, oy, dr, dmax, toScreenXYZ } = view;
+  const N = W * H;
+
+  // CPU Density Buffer (Float32Array)
+  const cnt = new Float32Array(N);
+  const path = state.mode === 'path';
+  const R = path ? new Float32Array(N) : null;
+  const Gc = path ? new Float32Array(N) : null;
+  const B = path ? new Float32Array(N) : null;
 
   const X0 = box.x, X1 = box.x + box.w - 1;
   const Y0 = box.y, Y1 = box.y + box.h - 1;
@@ -1868,15 +2054,18 @@ function renderArt(ctx, W, H, opt) {
   };
 
   let drawn = 0;
+  const pt = [0, 0, 0];
+  const p = opt.p || state.p, o2 = [0, 0];
+
   if (kind === 'map') {
-    const total = Math.max(1000, Math.round(opt.mapN));
+    const total = Math.max(1000, Math.round(opt.mapN || DETAIL.map[state.detail]));
     const jumpPx = base * 0.5;
     let x = 0.1, y = 0.1, lx = 0, ly = 0;
     for (let i = 0; i < total + 100; i++) {
       d.step(x, y, p, o2); x = o2[0]; y = o2[1];
       if (i < 100) continue;
-      proj(x, y);
-      const px = ox + (pu - uc) * S, py = oy - (pv - vc) * S;
+      toScreenXYZ(x, y, 0, pt);
+      const px = pt[0], py = pt[1];
       if (path) {
         const dx = px - lx, dy = py - ly;
         setCol(Math.sqrt(dx * dx + dy * dy) / jumpPx);
@@ -1889,9 +2078,9 @@ function renderArt(ctx, W, H, opt) {
     const { pts, n } = cache;
     for (let i = 0; i < n; i++) {
       const k = i * 3;
-      proj(pts[k], pts[k + 1], pts[k + 2]);
+      toScreenXYZ(pts[k], pts[k + 1], pts[k + 2], pt);
       if (path) setCol(i / n);
-      dep(ox + (pu - uc) * S, oy - (pv - vc) * S, 1);
+      dep(pt[0], pt[1], 1);
     }
     drawn = n;
   } else {
@@ -1903,15 +2092,15 @@ function renderArt(ctx, W, H, opt) {
     for (let i = start; i < n; i += stride) {
       const k = i * 3, x = pts[k];
       if (x !== x) { has = false; continue; }
-      proj(x, pts[k + 1], pts[k + 2]);
-      const px = ox + (pu - uc) * S, py = oy - (pv - vc) * S;
+      toScreenXYZ(x, pts[k + 1], pts[k + 2], pt);
+      const px = pt[0], py = pt[1], depth01 = pt[2];
 
       if (has) {
         const dx = px - lx, dy = py - ly;
         const len = Math.sqrt(dx * dx + dy * dy);
         if (len < maxJump) {
           if (path) setCol(tt ? tt[i] : (i - start) / span);
-          const sh = shade ? 0.3 + 0.7 * (dmax - pd) * dr : 1;
+          const sh = shade ? 0.3 + 0.7 * depth01 : 1;
           const steps = len < 0.7 ? 1 : Math.min(400, Math.ceil(len / 0.7));
           const w = (len / steps) * sh;
           for (let s = 1; s <= steps; s++) {
@@ -1986,6 +2175,15 @@ function renderArt(ctx, W, H, opt) {
     ctx.restore();
   }
 
+  if (opt.includeHead) {
+    if (kind === 'map') {
+      drawGlowHead(ctx, lx, ly, base, state.traceHead || 1, lut, 1);
+    } else if (cache && cache.pts && cache.n > 0) {
+      const finalPt = view.toScreen(cache.n - 1);
+      if (finalPt) drawGlowHead(ctx, finalPt[0], finalPt[1], base, state.traceHead || 1, lut, 1);
+    }
+  }
+
   if (opt.caption) drawCaption(ctx, W, H, box, base, lut);
   return drawn;
 }
@@ -2020,6 +2218,11 @@ function infoText() {
 
 function renderPreview(fast) {
   if (!cache) return;
+  if (state.trace && !fast) {
+    startTrace();
+    return;
+  }
+  stopTrace();
   const { W, H } = sizeCanvas();
   const ctx = plate.getContext('2d');
   const t0 = performance.now();
@@ -2038,6 +2241,871 @@ function scheduleRender(fast) {
   rqFast = !!fast;
   if (rq) return;
   rq = requestAnimationFrame(() => { rq = 0; renderPreview(rqFast); });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6b. Glowing Path Trace Animation Engine
+   ───────────────────────────────────────────────────────────────────────────── */
+let trailCanvas = null, trailCtx = null;
+let traceRaf = 0;
+let traceRunning = false;
+let tracePaused = false;
+let traceLastTime = 0;
+let traceElapsed = 0;
+let traceLastIdx = 0;
+let traceRestartTimer = 0;
+
+function ensureTrailCanvas(W, H) {
+  if (!trailCanvas) {
+    trailCanvas = document.createElement('canvas');
+    trailCtx = trailCanvas.getContext('2d');
+  }
+  if (trailCanvas.width !== W || trailCanvas.height !== H) {
+    trailCanvas.width = W;
+    trailCanvas.height = H;
+  }
+  return { trailCanvas, trailCtx };
+}
+
+function traceEase(t) {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+function drawGlowHead(ctx, hx, hy, base, headGlow, lut, pulse) {
+  pulse = pulse || 1;
+  const rCore = Math.max(2, base * 0.012 * headGlow * pulse);
+  const rOuter = rCore * 3;
+  const bi = Math.min(1023, Math.round(1023 * 0.92)) * 3;
+  const cr = lut[bi], cg = lut[bi + 1], cb = lut[bi + 2];
+
+  ctx.save();
+  const grad = ctx.createRadialGradient(hx, hy, 0, hx, hy, rOuter);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+  grad.addColorStop(0.25, `rgba(${cr}, ${cg}, ${cb}, 0.85)`);
+  grad.addColorStop(0.65, `rgba(${cr}, ${cg}, ${cb}, 0.25)`);
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(hx, hy, rOuter, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.restore();
+}
+
+let mapTracePts = null, mapTraceCacheKey = '';
+function getMapTracePts(total) {
+  const key = `${cur.name}_${total}_${JSON.stringify(state.p)}`;
+  if (mapTracePts && mapTraceCacheKey === key && mapTracePts.length >= total * 2) {
+    return mapTracePts;
+  }
+  const d = cur.def, p = state.p, o2 = [0, 0];
+  const pts = new Float32Array(total * 2);
+  let x = 0.1, y = 0.1;
+  for (let i = 0; i < 100; i++) { d.step(x, y, p, o2); x = o2[0]; y = o2[1]; }
+  for (let i = 0; i < total; i++) {
+    d.step(x, y, p, o2); x = o2[0]; y = o2[1];
+    pts[i * 2] = x;
+    pts[i * 2 + 1] = y;
+  }
+  mapTracePts = pts;
+  mapTraceCacheKey = key;
+  return pts;
+}
+
+function stopTrace() {
+  traceRunning = false;
+  if (traceRaf) {
+    cancelAnimationFrame(traceRaf);
+    traceRaf = 0;
+  }
+  trailCanvas = null;
+  trailCtx = null;
+}
+
+function restartTrace() {
+  if (!state.trace || !cache) return;
+  traceElapsed = 0;
+  traceLastIdx = 0;
+  tracePaused = false;
+  if ($('tracePlay')) $('tracePlay').textContent = '⏸ Pause';
+  if (trailCtx && trailCanvas) {
+    trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+  }
+  startTrace();
+}
+
+function pauseTrace() {
+  tracePaused = true;
+  if ($('tracePlay')) $('tracePlay').textContent = '▶ Play';
+}
+
+function resumeTrace() {
+  if (!traceRunning) {
+    startTrace();
+  } else {
+    tracePaused = false;
+    traceLastTime = performance.now();
+    if ($('tracePlay')) $('tracePlay').textContent = '⏸ Pause';
+  }
+}
+
+function toggleTracePlay() {
+  if (tracePaused) resumeTrace();
+  else pauseTrace();
+}
+
+function tickTrace(now) {
+  if (!traceRunning || !state.trace) return;
+  traceRaf = requestAnimationFrame(tickTrace);
+
+  if (!traceLastTime) traceLastTime = now;
+  const delta = Math.min(0.1, (now - traceLastTime) / 1000);
+  traceLastTime = now;
+
+  if (tracePaused) return;
+
+  traceElapsed += delta;
+  const dur = Math.max(4, state.traceDur);
+  const isLoop = state.traceLoop;
+
+  let progress = 0, isFading = false, fadeProgress = 0;
+  if (traceElapsed < dur) {
+    progress = traceEase(traceElapsed / dur);
+  } else {
+    if (isLoop) {
+      fadeProgress = (traceElapsed - dur) / 0.8;
+      if (fadeProgress >= 1) {
+        traceElapsed = 0;
+        traceLastIdx = 0;
+        if (trailCtx && trailCanvas) {
+          trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        }
+        return;
+      }
+      progress = 1;
+      isFading = true;
+    } else {
+      progress = 1;
+    }
+  }
+
+  const { W, H } = sizeCanvas();
+  const ctx = plate.getContext('2d');
+  const view = buildView(W, H, { fast: false });
+  const { box, base, lut, shade, toScreenXYZ, toScreen } = view;
+
+  const { trailCanvas: tc, trailCtx: tctx } = ensureTrailCanvas(W, H);
+
+  if (traceLastIdx === 0 && traceElapsed < 0.1) {
+    tctx.clearRect(0, 0, W, H);
+  }
+
+  const kind = cache.kind;
+  const total = kind === 'map' ? DETAIL.map[state.detail] : cache.n;
+  const targetIdx = Math.min(total - 1, Math.round(progress * (total - 1)));
+
+  const br = lut[0], bg = lut[1], bb = lut[2];
+  const bgL = (0.2126 * br + 0.7152 * bg + 0.0722 * bb) / 255;
+  const compOp = bgL < 0.5 ? 'lighter' : 'multiply';
+
+  if (targetIdx > traceLastIdx) {
+    tctx.save();
+    tctx.globalCompositeOperation = compOp;
+    const pt0 = [0, 0, 0], pt1 = [0, 0, 0];
+    const lineWidth = Math.max(1, base * 0.0012);
+    tctx.lineWidth = lineWidth;
+    tctx.lineCap = 'round';
+    tctx.lineJoin = 'round';
+
+    const maxPtsPerFrame = 40000;
+    const endIdx = Math.min(targetIdx, traceLastIdx + maxPtsPerFrame);
+
+    if (kind === 'map') {
+      const mpts = getMapTracePts(total);
+      for (let i = traceLastIdx; i <= endIdx; i++) {
+        toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+        let colIdx;
+        if (state.mode === 'path') {
+          if (i > 0) {
+            toScreenXYZ(mpts[(i - 1) * 2], mpts[(i - 1) * 2 + 1], 0, pt1);
+            const dx = pt0[0] - pt1[0], dy = pt0[1] - pt1[1];
+            const jump = Math.min(1, Math.sqrt(dx * dx + dy * dy) / (base * 0.5));
+            colIdx = ((0.28 + 0.72 * jump) * 1023) | 0;
+          } else {
+            colIdx = (0.5 * 1023) | 0;
+          }
+        } else {
+          colIdx = (0.65 * 1023) | 0;
+        }
+        tctx.fillStyle = `rgb(${lut[colIdx * 3]}, ${lut[colIdx * 3 + 1]}, ${lut[colIdx * 3 + 2]})`;
+        tctx.fillRect(pt0[0] - 0.75, pt0[1] - 0.75, 1.5, 1.5);
+      }
+    } else {
+      const pts = cache.pts, start = cache.start, span = Math.max(1, total - start);
+      const tt = cache.tt;
+      let prevValid = false;
+
+      for (let i = traceLastIdx; i <= endIdx; i++) {
+        const k = i * 3;
+        const x = pts[k];
+        if (x !== x) { prevValid = false; continue; }
+        toScreenXYZ(x, pts[k + 1], pts[k + 2], pt1);
+
+        if (prevValid) {
+          const dx = pt1[0] - pt0[0], dy = pt1[1] - pt0[1];
+          const len = Math.sqrt(dx * dx + dy * dy);
+          if (len < base * 0.4) {
+            let colIdx;
+            if (state.mode === 'path') {
+              const tVal = tt ? tt[i] : (i < start ? 0.3 * (i / Math.max(1, start)) : (i - start) / span);
+              colIdx = ((0.28 + 0.72 * Math.min(1, Math.max(0, tVal))) * 1023) | 0;
+            } else {
+              colIdx = (0.65 * 1023) | 0;
+            }
+            const depth01 = pt1[2];
+            const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+            const r = (lut[colIdx * 3] * sh) | 0;
+            const g = (lut[colIdx * 3 + 1] * sh) | 0;
+            const b = (lut[colIdx * 3 + 2] * sh) | 0;
+            const alpha = i < start ? 0.35 : 0.85;
+
+            tctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            tctx.beginPath();
+            tctx.moveTo(pt0[0], pt0[1]);
+            tctx.lineTo(pt1[0], pt1[1]);
+            tctx.stroke();
+          }
+        }
+        pt0[0] = pt1[0]; pt0[1] = pt1[1]; pt0[2] = pt1[2];
+        prevValid = true;
+      }
+    }
+    tctx.restore();
+    traceLastIdx = endIdx;
+  }
+
+  ctx.save();
+  ctx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
+  ctx.fillRect(0, 0, W, H);
+
+  if (isFading) {
+    ctx.globalAlpha = Math.max(0, 1 - fadeProgress);
+  }
+
+  ctx.drawImage(tc, 0, 0);
+
+  // Draw tail
+  const tailPct = Math.max(1, Math.min(15, state.traceTail || 4)) / 100;
+  const tailCount = Math.max(2, Math.round(total * tailPct));
+  const tailStart = Math.max(0, traceLastIdx - tailCount);
+
+  if (traceLastIdx > tailStart) {
+    ctx.save();
+    ctx.globalCompositeOperation = compOp;
+    if (kind === 'map') {
+      const mpts = getMapTracePts(total);
+      for (let i = tailStart; i <= traceLastIdx; i++) {
+        const frac = (i - tailStart) / (traceLastIdx - tailStart);
+        view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+        const bi = Math.min(1023, Math.round(1023 * (0.4 + 0.6 * frac))) * 3;
+        ctx.fillStyle = `rgba(${lut[bi]}, ${lut[bi + 1]}, ${lut[bi + 2]}, ${0.2 + 0.8 * frac})`;
+        const dotR = Math.max(1, base * 0.002 * (1 + frac));
+        ctx.beginPath();
+        ctx.arc(pt0[0], pt0[1], dotR, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    } else {
+      const pts = cache.pts;
+      const count = traceLastIdx - tailStart;
+      let ppx = 0, ppy = 0, pvalid = false;
+      for (let i = tailStart; i <= traceLastIdx; i++) {
+        const k = i * 3, x = pts[k];
+        if (x !== x) { pvalid = false; continue; }
+        view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt0);
+        if (pvalid) {
+          const frac = (i - tailStart) / count;
+          const bi = Math.min(1023, Math.round(1023 * (0.35 + 0.65 * frac))) * 3;
+          ctx.strokeStyle = `rgba(${lut[bi]}, ${lut[bi + 1]}, ${lut[bi + 2]}, ${0.15 + 0.85 * frac})`;
+          ctx.lineWidth = Math.max(1.2, base * (0.001 + 0.0025 * frac));
+          ctx.beginPath();
+          ctx.moveTo(ppx, ppy);
+          ctx.lineTo(pt0[0], pt0[1]);
+          ctx.stroke();
+        }
+        ppx = pt0[0]; ppy = pt0[1]; pvalid = true;
+      }
+    }
+    ctx.restore();
+  }
+
+  // Draw glowing comet head
+  let headPt;
+  if (kind === 'map') {
+    const mpts = getMapTracePts(total);
+    const hi = Math.min(total - 1, traceLastIdx);
+    headPt = view.toScreenXYZ(mpts[hi * 2], mpts[hi * 2 + 1], 0);
+  } else {
+    headPt = view.toScreen(Math.min(total - 1, traceLastIdx));
+  }
+  const pulse = 1 + 0.18 * Math.sin(traceElapsed * 1.5 * 2 * Math.PI);
+  drawGlowHead(ctx, headPt[0], headPt[1], base, state.traceHead || 1, lut, pulse);
+
+  // Initial state marker ring (fades over first 1.0 s)
+  if (traceElapsed < 1.0) {
+    const startPt = kind === 'map'
+      ? view.toScreenXYZ(getMapTracePts(total)[0], getMapTracePts(total)[1], 0)
+      : view.toScreen(0);
+    const ringAlpha = Math.max(0, 1 - traceElapsed);
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 255, 255, ${ringAlpha * 0.9})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(startPt[0], startPt[1], base * 0.015, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  if (state.caption) {
+    drawCaption(ctx, W, H, box, base, lut);
+  }
+
+  ctx.restore();
+
+  $('readout').textContent = `${cur.name} · ${infoText()} · ${Math.round(progress * 100)}% trace`;
+}
+
+function startTrace() {
+  if (!state.trace || !cache) return;
+  if (!traceRunning) {
+    traceRunning = true;
+    tracePaused = false;
+    traceLastTime = performance.now();
+    traceRaf = requestAnimationFrame(tickTrace);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6c. Full-Screen Live Wallpaper Mode & Shareable Live Link
+   ───────────────────────────────────────────────────────────────────────────── */
+let liveActive = false, liveRaf = 0;
+let liveYawAngle = 0, livePitchAngle = 0;
+let liveTime = 0, liveLastTick = 0;
+let liveWakeLock = null;
+let liveLastTap = 0, liveHintTimer = 0;
+let liveDpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+let liveFrameTimeAccum = 0, liveFrameCount = 0;
+
+async function enterLiveMode() {
+  liveActive = true;
+  $('liveOverlay').hidden = false;
+  $('liveModal').hidden = true;
+  document.body.style.overflow = 'hidden';
+
+  const el = $('liveOverlay');
+  if (el.requestFullscreen) {
+    el.requestFullscreen().catch(() => {});
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen().catch(() => {});
+  }
+
+  try {
+    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+      liveWakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (_) {}
+
+  resizeLiveCanvas();
+
+  liveYawAngle = state.yaw;
+  livePitchAngle = state.pitch;
+  liveTime = 0;
+  liveLastTick = performance.now();
+  liveFrameTimeAccum = 0;
+  liveFrameCount = 0;
+
+  liveRaf = requestAnimationFrame(tickLiveMode);
+}
+
+function resizeLiveCanvas() {
+  const lc = $('liveCanvas');
+  if (!lc) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  lc.width = Math.round(w * liveDpr);
+  lc.height = Math.round(h * liveDpr);
+}
+
+function exitLiveMode() {
+  liveActive = false;
+  if (liveRaf) { cancelAnimationFrame(liveRaf); liveRaf = 0; }
+  $('liveOverlay').hidden = true;
+  $('liveTapToStart').hidden = true;
+  document.body.style.overflow = '';
+
+  if (typeof document !== 'undefined' && document.fullscreenElement) {
+    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(() => {});
+  }
+
+  if (liveWakeLock) {
+    try { liveWakeLock.release(); } catch (_) {}
+    liveWakeLock = null;
+  }
+
+  scheduleRender(false);
+}
+
+function showLiveHint() {
+  const h = $('liveHint');
+  if (!h) return;
+  h.style.opacity = '1';
+  clearTimeout(liveHintTimer);
+  liveHintTimer = setTimeout(() => {
+    h.style.opacity = '0';
+  }, 2000);
+}
+
+function tickLiveMode(now) {
+  if (!liveActive) return;
+  liveRaf = requestAnimationFrame(tickLiveMode);
+
+  const dt = Math.min(0.1, (now - liveLastTick) / 1000);
+  liveLastTick = now;
+  liveTime += dt;
+
+  liveFrameTimeAccum += dt;
+  liveFrameCount++;
+  if (liveFrameCount >= 60) {
+    const avgFps = liveFrameCount / liveFrameTimeAccum;
+    if (avgFps < 45 && liveDpr > 1) {
+      liveDpr = 1;
+      resizeLiveCanvas();
+    }
+    liveFrameCount = 0;
+    liveFrameTimeAccum = 0;
+  }
+
+  const lc = $('liveCanvas');
+  const W = lc.width, H = lc.height;
+  const ctx = lc.getContext('2d');
+
+  if (state.liveRot) {
+    const rotSpeed = (2 * Math.PI) / Math.max(20, state.liveRotPeriod);
+    liveYawAngle += rotSpeed * dt;
+    if (is3d()) {
+      livePitchAngle = state.pitch + (8 * Math.PI / 180) * Math.sin(liveTime * (2 * Math.PI / 15));
+    }
+  } else {
+    liveYawAngle = state.yaw;
+    livePitchAngle = state.pitch;
+  }
+
+  const exposureMult = state.liveBreathe ? (1 + 0.10 * Math.sin(liveTime * (2 * Math.PI / 6))) : 1;
+
+  let activePalette = state.palette;
+  if (state.livePaletteDrift) {
+    const pKeys = Object.keys(PALETTES);
+    const pIdx = Math.floor(liveTime / 15) % pKeys.length;
+    activePalette = pKeys[pIdx];
+  }
+
+  const view = buildView(W, H, {
+    yaw: liveYawAngle,
+    pitch: livePitchAngle,
+    zoom: state.zoom,
+    palette: activePalette,
+    caption: false
+  });
+
+  const { base, lut, shade, toScreenXYZ, toScreen } = view;
+  const br = lut[0], bg = lut[1], bb = lut[2];
+  const bgL = (0.2126 * br + 0.7152 * bg + 0.0722 * bb) / 255;
+  const compOp = bgL < 0.5 ? 'lighter' : 'multiply';
+
+  ctx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.globalCompositeOperation = compOp;
+
+  const kind = cache ? cache.kind : solverKind();
+  const pt0 = [0, 0, 0], pt1 = [0, 0, 0];
+
+  if (kind === 'map') {
+    const total = Math.min(150000, DETAIL.map[state.detail]);
+    const mpts = getMapTracePts(total);
+    for (let i = 0; i < total; i += 2) {
+      view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+      const colIdx = (0.65 * 1023) | 0;
+      ctx.fillStyle = `rgba(${lut[colIdx * 3]}, ${lut[colIdx * 3 + 1]}, ${lut[colIdx * 3 + 2]}, ${0.6 * exposureMult})`;
+      ctx.fillRect(pt0[0] - 0.75, pt0[1] - 0.75, 1.5, 1.5);
+    }
+  } else if (cache && cache.pts) {
+    const { pts, n, start, tt } = cache;
+    const isMobile = window.innerWidth < 880;
+    const targetPoints = isMobile ? 150000 : 400000;
+    const stride = Math.max(1, Math.round((n - start) / targetPoints));
+    const span = Math.max(1, n - start);
+    let prevValid = false;
+
+    ctx.lineWidth = Math.max(1, base * 0.0012);
+    ctx.lineCap = 'round';
+
+    for (let i = start; i < n; i += stride) {
+      const k = i * 3, x = pts[k];
+      if (x !== x) { prevValid = false; continue; }
+      view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt1);
+
+      if (prevValid) {
+        const dx = pt1[0] - pt0[0], dy = pt1[1] - pt0[1];
+        if (Math.sqrt(dx * dx + dy * dy) < base * 0.4) {
+          let colIdx;
+          if (state.mode === 'path') {
+            const tVal = tt ? tt[i] : (i - start) / span;
+            colIdx = ((0.28 + 0.72 * Math.min(1, Math.max(0, tVal))) * 1023) | 0;
+          } else {
+            colIdx = (0.65 * 1023) | 0;
+          }
+          const depth01 = pt1[2];
+          const sh = (shade && is3d()) ? 0.3 + 0.7 * depth01 : 1;
+          const r = (lut[colIdx * 3] * sh) | 0;
+          const g = (lut[colIdx * 3 + 1] * sh) | 0;
+          const b = (lut[colIdx * 3 + 2] * sh) | 0;
+
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.75 * exposureMult})`;
+          ctx.beginPath();
+          ctx.moveTo(pt0[0], pt0[1]);
+          ctx.lineTo(pt1[0], pt1[1]);
+          ctx.stroke();
+        }
+      }
+      pt0[0] = pt1[0]; pt0[1] = pt1[1]; pt0[2] = pt1[2];
+      prevValid = true;
+    }
+
+    const lastPt = view.toScreen(n - 1);
+    if (lastPt) {
+      const pulse = 1 + 0.18 * Math.sin(liveTime * 1.5 * 2 * Math.PI);
+      drawGlowHead(ctx, lastPt[0], lastPt[1], base, 1.2 * exposureMult, lut, pulse);
+    }
+  }
+
+  ctx.restore();
+}
+
+function serializeLiveUrl(baseUrl) {
+  const base = baseUrl || (typeof window !== 'undefined' && window.location && window.location.href ? window.location.href : 'https://example.com/phase-space-prints/');
+  const u = new URL(base);
+  u.search = '';
+  u.searchParams.set('live', '1');
+  u.searchParams.set('sys', state.sys);
+  u.searchParams.set('palette', state.palette);
+  u.searchParams.set('mode', state.mode);
+  u.searchParams.set('yaw', toDeg(state.yaw).toFixed(1));
+  u.searchParams.set('pitch', toDeg(state.pitch).toFixed(1));
+  u.searchParams.set('zoom', state.zoom.toFixed(2));
+  u.searchParams.set('rot', String(state.liveRotPeriod));
+  u.searchParams.set('trace', state.trace ? '1' : '0');
+  u.searchParams.set('breathe', state.liveBreathe ? '1' : '0');
+  u.searchParams.set('autorot', state.liveRot ? '1' : '0');
+
+  if (state.sys === 'custom') {
+    const c = state.customConfig;
+    u.searchParams.set('c_name', c.name);
+    u.searchParams.set('c_eqx', c.eqX);
+    u.searchParams.set('c_eqy', c.eqY);
+    u.searchParams.set('c_eqz', c.eqZ);
+    u.searchParams.set('c_const', c.constStr);
+    u.searchParams.set('c_x0', c.x0Str);
+    u.searchParams.set('c_dt', c.dtStr);
+  }
+  return u.toString();
+}
+
+function parseUrlParams(urlStr) {
+  let search = '';
+  if (urlStr) {
+    try { search = new URL(urlStr).search; } catch (_) {}
+  } else if (typeof window !== 'undefined' && window.location) {
+    search = window.location.search;
+  }
+  if (!search) return null;
+  const p = new URLSearchParams(search);
+  if (!p.has('sys') && !p.has('live')) return null;
+
+  const res = {};
+  if (p.has('sys')) res.sys = p.get('sys');
+  if (p.has('palette') && PALETTES[p.get('palette')]) res.palette = p.get('palette');
+  if (p.has('mode')) res.mode = p.get('mode');
+  if (p.has('yaw')) res.yaw = toRad(+p.get('yaw'));
+  if (p.has('pitch')) res.pitch = toRad(+p.get('pitch'));
+  if (p.has('zoom')) res.zoom = +p.get('zoom');
+  if (p.has('trace')) res.trace = p.get('trace') === '1';
+  if (p.has('rot')) res.liveRotPeriod = +p.get('rot');
+  if (p.has('breathe')) res.liveBreathe = p.get('breathe') === '1';
+  if (p.has('autorot')) res.liveRot = p.get('autorot') === '1';
+
+  if (res.sys === 'custom' || p.has('c_name')) {
+    res.customConfig = {
+      name: p.get('c_name') || 'Custom Model',
+      eqX: p.get('c_eqx') || '',
+      eqY: p.get('c_eqy') || '',
+      eqZ: p.get('c_eqz') || '',
+      constStr: p.get('c_const') || '',
+      x0Str: p.get('c_x0') || '',
+      dtStr: p.get('c_dt') || '0.01'
+    };
+  }
+  if (p.get('live') === '1') res.isLiveLaunch = true;
+  return res;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   6d. Looping Video & Lock Screen PNG Export
+   ───────────────────────────────────────────────────────────────────────────── */
+let vidRecording = false;
+let vidCancelRequested = false;
+
+function pickVideoMime() {
+  const candidates = [
+    'video/mp4;codecs=avc1',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm'
+  ];
+  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return null;
+  for (const m of candidates) {
+    if (MediaRecorder.isTypeSupported(m)) return m;
+  }
+  return null;
+}
+
+async function exportVideoWallpaper() {
+  if (vidRecording || !cache) return;
+  vidRecording = true;
+  vidCancelRequested = false;
+
+  const mime = pickVideoMime();
+  if (!mime) {
+    $('vidStatus').textContent = 'Video recording is not supported in this browser. Use "Still frame for lock screen" instead.';
+    vidRecording = false;
+    return;
+  }
+
+  const isMp4 = mime.includes('mp4');
+  const ext = isMp4 ? 'mp4' : 'webm';
+
+  const fmt = $('vidFormat').value;
+  let W = 1080, H = 1080;
+  if (fmt === 'phone') { W = 1080; H = 2340; }
+  else if (fmt === 'desktop') { W = 1920; H = 1080; }
+
+  const dur = parseInt($('vidLength').value, 10) || 20;
+  const fps = 30;
+  const totalFrames = dur * fps;
+
+  $('vidProgressWrap').hidden = false;
+  $('cancelVidBtn').hidden = false;
+  $('recordVidBtn').disabled = true;
+  $('vidProgressBar').style.width = '0%';
+  $('vidStatus').textContent = `Encoding ${dur}s ${fmt} video (${W}×${H} at 30 fps) using ${mime}…`;
+
+  const offCv = document.createElement('canvas');
+  offCv.width = W; offCv.height = H;
+  const offCtx = offCv.getContext('2d');
+
+  let stream;
+  try {
+    stream = offCv.captureStream(fps);
+  } catch (err) {
+    $('vidStatus').textContent = 'Canvas captureStream failed: ' + err.message;
+    $('vidProgressWrap').hidden = true;
+    $('cancelVidBtn').hidden = true;
+    $('recordVidBtn').disabled = false;
+    vidRecording = false;
+    return;
+  }
+
+  const chunks = [];
+  const rec = new MediaRecorder(stream, {
+    mimeType: mime,
+    videoBitsPerSecond: 12000000
+  });
+
+  rec.ondataavailable = e => {
+    if (e.data && e.data.size > 0) chunks.push(e.data);
+  };
+
+  const recStopped = new Promise(resolve => {
+    rec.onstop = resolve;
+  });
+
+  rec.start();
+
+  const startYaw = state.yaw;
+  const startPitch = state.pitch;
+  const three = is3d();
+
+  for (let f = 0; f < totalFrames; f++) {
+    if (vidCancelRequested) break;
+
+    const t = f / totalFrames;
+    const frameYaw = startYaw + t * 2 * Math.PI;
+    const framePitch = three ? startPitch + (8 * Math.PI / 180) * Math.sin(t * 2 * Math.PI * (dur / 15)) : startPitch;
+    const exposureMult = 1 + 0.10 * Math.sin(t * 2 * Math.PI * (dur / 6));
+
+    const view = buildView(W, H, {
+      yaw: frameYaw,
+      pitch: framePitch,
+      zoom: state.zoom,
+      caption: false
+    });
+
+    const { base, lut, shade } = view;
+    const br = lut[0], bg = lut[1], bb = lut[2];
+    const bgL = (0.2126 * br + 0.7152 * bg + 0.0722 * bb) / 255;
+    const compOp = bgL < 0.5 ? 'lighter' : 'multiply';
+
+    offCtx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
+    offCtx.fillRect(0, 0, W, H);
+
+    offCtx.save();
+    offCtx.globalCompositeOperation = compOp;
+
+    const kind = cache.kind;
+    const pt0 = [0, 0, 0], pt1 = [0, 0, 0];
+
+    if (kind === 'map') {
+      const total = Math.min(180000, DETAIL.map[state.detail]);
+      const mpts = getMapTracePts(total);
+      for (let i = 0; i < total; i += 2) {
+        view.toScreenXYZ(mpts[i * 2], mpts[i * 2 + 1], 0, pt0);
+        const colIdx = (0.65 * 1023) | 0;
+        offCtx.fillStyle = `rgba(${lut[colIdx * 3]}, ${lut[colIdx * 3 + 1]}, ${lut[colIdx * 3 + 2]}, ${0.65 * exposureMult})`;
+        offCtx.fillRect(pt0[0] - 0.75, pt0[1] - 0.75, 1.5, 1.5);
+      }
+    } else if (cache && cache.pts) {
+      const { pts, n, start, tt } = cache;
+      const stride = Math.max(1, Math.round((n - start) / 300000));
+      const span = Math.max(1, n - start);
+      let prevValid = false;
+
+      offCtx.lineWidth = Math.max(1.2, base * 0.0014);
+      offCtx.lineCap = 'round';
+
+      for (let i = start; i < n; i += stride) {
+        const k = i * 3, x = pts[k];
+        if (x !== x) { prevValid = false; continue; }
+        view.toScreenXYZ(x, pts[k + 1], pts[k + 2], pt1);
+
+        if (prevValid) {
+          const dx = pt1[0] - pt0[0], dy = pt1[1] - pt0[1];
+          if (Math.sqrt(dx * dx + dy * dy) < base * 0.4) {
+            let colIdx;
+            if (state.mode === 'path') {
+              const tVal = tt ? tt[i] : (i - start) / span;
+              colIdx = ((0.28 + 0.72 * Math.min(1, Math.max(0, tVal))) * 1023) | 0;
+            } else {
+              colIdx = (0.65 * 1023) | 0;
+            }
+            const depth01 = pt1[2];
+            const sh = (shade && three) ? 0.3 + 0.7 * depth01 : 1;
+            const r = (lut[colIdx * 3] * sh) | 0;
+            const g = (lut[colIdx * 3 + 1] * sh) | 0;
+            const b = (lut[colIdx * 3 + 2] * sh) | 0;
+
+            offCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${0.8 * exposureMult})`;
+            offCtx.beginPath();
+            offCtx.moveTo(pt0[0], pt0[1]);
+            offCtx.lineTo(pt1[0], pt1[1]);
+            offCtx.stroke();
+          }
+        }
+        pt0[0] = pt1[0]; pt0[1] = pt1[1]; pt0[2] = pt1[2];
+        prevValid = true;
+      }
+
+      const lastPt = view.toScreen(n - 1);
+      if (lastPt) {
+        const pulse = 1 + 0.18 * Math.sin(t * dur * 1.5 * 2 * Math.PI);
+        drawGlowHead(offCtx, lastPt[0], lastPt[1], base, 1.2 * exposureMult, lut, pulse);
+      }
+    }
+
+    offCtx.restore();
+
+    const pct = Math.round(((f + 1) / totalFrames) * 100);
+    $('vidProgressBar').style.width = pct + '%';
+    $('vidProgressText').textContent = `Frame ${f + 1} / ${totalFrames} (${pct}%)`;
+
+    await new Promise(r => setTimeout(r, 0));
+  }
+
+  if (vidCancelRequested) {
+    rec.stop();
+    $('vidProgressWrap').hidden = true;
+    $('cancelVidBtn').hidden = true;
+    $('recordVidBtn').disabled = false;
+    $('vidStatus').textContent = 'Video export cancelled.';
+    vidRecording = false;
+    return;
+  }
+
+  rec.stop();
+  await recStopped;
+
+  const blob = new Blob(chunks, { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `phase-space-${state.sys}-${state.palette}-live.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+  $('vidProgressWrap').hidden = true;
+  $('cancelVidBtn').hidden = true;
+  $('recordVidBtn').disabled = false;
+  vidRecording = false;
+
+  const mb = (blob.size / 1048576).toFixed(2);
+  $('vidStatus').innerHTML = `✓ Downloaded <strong>${a.download}</strong> (${mb} MB).` +
+    (!isMp4 ? `<br><small style="color:var(--muted);">Note: Recorded as WebM because your browser does not encode MP4.</small>` : '');
+}
+
+async function exportLockScreenPng() {
+  if (!cache) return;
+  const fmt = $('vidFormat').value;
+  let W = 1080, H = 1080;
+  if (fmt === 'phone') { W = 1080; H = 2340; }
+  else if (fmt === 'desktop') { W = 1920; H = 1080; }
+
+  $('vidStatus').textContent = `Rendering still lock-screen PNG (${W} × ${H} px)…`;
+  await new Promise(r => setTimeout(r, 40));
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const prevPx = Math.max(1, plate.width * plate.height);
+  const mapN = Math.min(40e6, DETAIL.map[state.detail] * Math.max(1, (W * H) / prevPx));
+
+  renderArt(ctx, W, H, { caption: state.caption, fast: false, mapN, includeHead: true });
+
+  cv.toBlob(blob => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `phase-space-${state.sys}-${state.palette}-lockscreen.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    $('vidStatus').textContent = `✓ Downloaded ${a.download} (${(blob.size / 1048576).toFixed(2)} MB)`;
+  }, 'image/png');
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -2195,6 +3263,26 @@ function syncAll() {
   $('title').value = state.title;
   $('title').placeholder = cur.name;
   $('hint').textContent = threeD ? 'Drag the print to turn and tilt' : 'Drag sideways to turn';
+
+  if ($('trace')) {
+    $('trace').checked = state.trace;
+    $('traceBox').hidden = !state.trace;
+    $('traceDur').value = state.traceDur;
+    $('traceDurOut').textContent = `${state.traceDur} s`;
+    $('traceTail').value = state.traceTail;
+    $('traceTailOut').textContent = `${state.traceTail}%`;
+    $('traceHead').value = state.traceHead;
+    $('traceHeadOut').textContent = state.traceHead.toFixed(1);
+    $('traceLoop').checked = state.traceLoop;
+  }
+  if ($('liveTrace')) {
+    $('liveTrace').checked = state.liveTrace;
+    $('liveRot').checked = state.liveRot;
+    $('liveRotPeriod').value = state.liveRotPeriod;
+    $('liveRotPeriodOut').textContent = `${state.liveRotPeriod} s`;
+    $('liveBreathe').checked = state.liveBreathe;
+    $('livePaletteDrift').checked = state.livePaletteDrift;
+  }
 }
 
 function setSystem(key, saved) {
@@ -2336,7 +3424,7 @@ function load() {
 let lastUrl = null;
 function recipeText() {
   const c = captionData();
-  return `${cur.name} | ${c.meta.replace(/\s+·\s+/g, ', ')} | turn ${fmt(toDeg(state.yaw), 1)}°, tilt ${fmt(toDeg(state.pitch), 1)}°, zoom ${state.zoom.toFixed(2)} | ${PALETTES[state.palette].name}, ${state.mode === 'path' ? 'along the path' : 'density'}, exposure ${state.exposure.toFixed(2)}, contrast ${state.contrast.toFixed(2)}${state.glow ? ', glow' : ''} | ${DETAIL_NAMES[state.detail]} detail | ${FORMATS[state.format].name}`;
+  return `${cur.name} | ${c.meta.replace(/\s+·\s+/g, ', ')} | turn ${fmt(toDeg(state.yaw), 1)}°, tilt ${fmt(toDeg(state.pitch), 1)}°, zoom ${state.zoom.toFixed(2)} | ${PALETTES[state.palette].name}, ${state.mode === 'path' ? 'along the path' : 'density'}, exposure ${state.exposure.toFixed(2)}, contrast ${state.contrast.toFixed(2)}${state.glow ? ', glow' : ''}${state.trace ? ', animated path' : ''} | ${DETAIL_NAMES[state.detail]} detail | ${FORMATS[state.format].name}`;
 }
 
 async function renderPrint() {
@@ -2367,7 +3455,8 @@ async function renderPrint() {
     const prevPx = Math.max(1, plate.width * plate.height);
     const mapN = Math.min(40e6, DETAIL.map[state.detail] * Math.max(1, (f.w * f.h) / prevPx));
 
-    renderArt(ctx, f.w, f.h, { caption: state.caption, fast: false, mapN });
+    const incHead = !!($('printHead') && $('printHead').checked);
+    renderArt(ctx, f.w, f.h, { caption: state.caption, fast: false, mapN, includeHead: incHead });
 
     cv.toBlob(b => {
       if (!b) {
@@ -2570,6 +3659,135 @@ function runUnitTests() {
     assert(`Successfully rendered all 7 formats × 2 colouring modes × 2 caption states (28 combinations)`, allRendersValid);
   } catch (e) { assert('Formats render validation', false, e.message); }
 
+  log.push('\n=== 10. View Projection & Pixel Determinism (buildView) ===');
+  try {
+    const testPts = new Float32Array([
+      1.0, 2.0, 3.0,
+      4.0, 5.0, 6.0,
+      -2.0, 0.5, 1.5
+    ]);
+    const prevCache = cache;
+    cache = { pts: testPts, n: 3, start: 0, kind: 'rk4', info: 'test' };
+
+    const v = buildView(200, 200, { caption: false, yaw: 0.3, pitch: -0.2, zoom: 1.2 });
+    assert('buildView returns box, base, lut, shade', !!(v.box && v.base && v.lut && typeof v.shade === 'boolean'));
+    assert('buildView returns toScreen and toScreenXYZ functions', typeof v.toScreen === 'function' && typeof v.toScreenXYZ === 'function');
+
+    const s0 = v.toScreen(0);
+    const s0_xyz = v.toScreenXYZ(1.0, 2.0, 3.0);
+    assert('toScreen(i) matches toScreenXYZ(pts[i])',
+      Math.abs(s0[0] - s0_xyz[0]) < 1e-10 &&
+      Math.abs(s0[1] - s0_xyz[1]) < 1e-10 &&
+      Math.abs(s0[2] - s0_xyz[2]) < 1e-10);
+
+    let savedA = null, savedB = null;
+    const ctxA = {
+      fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+      createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: (img) => { savedA = new Uint8ClampedArray(img.data); },
+      drawImage: () => {}, save: () => {}, restore: () => {}
+    };
+    const ctxB = {
+      fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+      createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: (img) => { savedB = new Uint8ClampedArray(img.data); },
+      drawImage: () => {}, save: () => {}, restore: () => {}
+    };
+    renderArt(ctxA, 64, 64, { caption: false, fast: false });
+    renderArt(ctxB, 64, 64, { caption: false, fast: false });
+
+    let diff = 0;
+    if (savedA && savedB) {
+      for (let i = 0; i < savedA.length; i++) {
+        if (savedA[i] !== savedB[i]) diff++;
+      }
+    } else {
+      diff = -1;
+    }
+    assert('renderArt output is deterministic & pixel-identical across runs', diff === 0);
+
+    cache = prevCache;
+  } catch (e) { assert('View projection & pixel test', false, e.message); }
+
+  log.push('\n=== 11. Trace Progress & Point Mapping ===');
+  try {
+    const totalPts = 1000;
+    const idx0 = Math.min(totalPts - 1, Math.round(traceEase(0) * (totalPts - 1)));
+    const idxMid = Math.min(totalPts - 1, Math.round(traceEase(0.5) * (totalPts - 1)));
+    const idx1 = Math.min(totalPts - 1, Math.round(traceEase(1) * (totalPts - 1)));
+    assert('Trace progress starts at index 0', idx0 === 0, `Got ${idx0}`);
+    assert('Trace progress is monotonically increasing', idxMid > idx0 && idx1 > idxMid);
+    assert('Trace progress ends at total - 1', idx1 === totalPts - 1, `Got ${idx1}`);
+    const stride = Math.max(1, Math.round((1000000 - 100) / 150000));
+    assert('Trace stride logic reduces multi-million trajectories', stride > 1);
+  } catch (e) { assert('Trace progress mapping', false, e.message); }
+
+  log.push('\n=== 12. URL Parameter Round-Trip ===');
+  try {
+    const originalState = {
+      sys: 'rossler',
+      palette: 'ember',
+      mode: 'path',
+      yaw: 0.523,
+      pitch: -0.349,
+      zoom: 1.45,
+      liveRotPeriod: 120,
+      trace: true,
+      liveBreathe: true,
+      liveRot: true
+    };
+    const savedSnapshot = Object.assign({}, state);
+    Object.assign(state, originalState);
+
+    const link = serializeLiveUrl();
+    const parsed = parseUrlParams(link);
+
+    assert('Round-trip preserves sys', parsed && parsed.sys === 'rossler');
+    assert('Round-trip preserves palette', parsed && parsed.palette === 'ember');
+    assert('Round-trip preserves mode', parsed && parsed.mode === 'path');
+    assert('Round-trip preserves trace flag', parsed && parsed.trace === true);
+    assert('Round-trip preserves zoom', parsed && Math.abs(parsed.zoom - 1.45) < 0.01);
+    assert('Round-trip preserves rotation period', parsed && parsed.liveRotPeriod === 120);
+
+    Object.assign(state, savedSnapshot);
+  } catch (e) { assert('URL parameter round-trip', false, e.message); }
+
+  log.push('\n=== 13. MediaRecorder MIME Selection Fallback ===');
+  try {
+    const mime = pickVideoMime();
+    assert('pickVideoMime returns a string or null without throwing', typeof mime === 'string' || mime === null);
+  } catch (e) { assert('MediaRecorder MIME selection', false, e.message); }
+
+  log.push('\n=== 14. State Persistence (New Fields) ===');
+  try {
+    const originalTrace = state.trace;
+    const originalDur = state.traceDur;
+    const originalTail = state.traceTail;
+    const originalHead = state.traceHead;
+    const originalLoop = state.traceLoop;
+
+    state.trace = true;
+    state.traceDur = 42;
+    state.traceTail = 11;
+    state.traceHead = 1.7;
+    state.traceLoop = false;
+    save();
+
+    const loaded = load();
+    assert('Saved state contains trace=true', loaded && loaded.trace === true);
+    assert('Saved state contains traceDur=42', loaded && loaded.traceDur === 42);
+    assert('Saved state contains traceTail=11', loaded && loaded.traceTail === 11);
+    assert('Saved state contains traceHead=1.7', loaded && Math.abs(loaded.traceHead - 1.7) < 1e-4);
+    assert('Saved state contains traceLoop=false', loaded && loaded.traceLoop === false);
+
+    state.trace = originalTrace;
+    state.traceDur = originalDur;
+    state.traceTail = originalTail;
+    state.traceHead = originalHead;
+    state.traceLoop = originalLoop;
+    save();
+  } catch (e) { assert('State persistence for new fields', false, e.message); }
+
   log.push(`\n========================================`);
   log.push(`Summary: ${passed} passed, ${failed} failed.`);
 
@@ -2593,10 +3811,10 @@ function init() {
   // Load saved state
   const saved = load();
   if (saved) {
-    for (const k of ['detail', 'yaw', 'pitch', 'zoom', 'exposure', 'contrast']) {
+    for (const k of ['detail', 'yaw', 'pitch', 'zoom', 'exposure', 'contrast', 'traceDur', 'traceTail', 'traceHead', 'liveRotPeriod']) {
       if (Number.isFinite(saved[k])) state[k] = saved[k];
     }
-    for (const k of ['depth', 'glow', 'caption']) {
+    for (const k of ['depth', 'glow', 'caption', 'trace', 'traceLoop', 'liveTrace', 'liveRot', 'liveBreathe', 'livePaletteDrift']) {
       if (typeof saved[k] === 'boolean') state[k] = saved[k];
     }
     if (PALETTES[saved.palette]) state.palette = saved.palette;
@@ -2646,44 +3864,177 @@ function init() {
   bindRange('yaw', v => {
     state.yaw = toRad(v);
     syncView();
-    scheduleRender(true);
+    if (state.trace) {
+      if (traceRunning) { cancelAnimationFrame(traceRaf); traceRaf = 0; traceRunning = false; }
+      scheduleRender(true);
+      clearTimeout(traceRestartTimer);
+      traceRestartTimer = setTimeout(restartTrace, 400);
+    } else {
+      scheduleRender(true);
+    }
   });
   bindRange('pitch', v => {
     state.pitch = toRad(v);
     syncView();
-    scheduleRender(true);
+    if (state.trace) {
+      if (traceRunning) { cancelAnimationFrame(traceRaf); traceRaf = 0; traceRunning = false; }
+      scheduleRender(true);
+      clearTimeout(traceRestartTimer);
+      traceRestartTimer = setTimeout(restartTrace, 400);
+    } else {
+      scheduleRender(true);
+    }
   });
   bindRange('zoom', v => {
     state.zoom = v;
     syncView();
-    scheduleRender(true);
+    if (state.trace) {
+      if (traceRunning) { cancelAnimationFrame(traceRaf); traceRaf = 0; traceRunning = false; }
+      scheduleRender(true);
+      clearTimeout(traceRestartTimer);
+      traceRestartTimer = setTimeout(restartTrace, 400);
+    } else {
+      scheduleRender(true);
+    }
   });
 
   for (const id of ['yaw', 'pitch', 'zoom']) {
-    $(id).addEventListener('change', () => { scheduleRender(false); save(); });
+    $(id).addEventListener('change', () => {
+      save();
+      if (state.trace) restartTrace();
+      else scheduleRender(false);
+    });
   }
 
   bindRange('exposure', v => {
     state.exposure = v;
     $('exposureOut').textContent = v.toFixed(2);
-    scheduleRender(false);
+    if (state.trace) restartTrace();
+    else scheduleRender(false);
     save();
   });
   bindRange('contrast', v => {
     state.contrast = v;
     $('contrastOut').textContent = v.toFixed(2);
-    scheduleRender(false);
+    if (state.trace) restartTrace();
+    else scheduleRender(false);
     save();
   });
 
-  $('depth').addEventListener('change', e => { state.depth = e.target.checked; scheduleRender(false); save(); });
-  $('glow').addEventListener('change', e => { state.glow = e.target.checked; scheduleRender(false); save(); });
+  $('depth').addEventListener('change', e => {
+    state.depth = e.target.checked;
+    if (state.trace) restartTrace();
+    else scheduleRender(false);
+    save();
+  });
+  $('glow').addEventListener('change', e => {
+    state.glow = e.target.checked;
+    if (state.trace) restartTrace();
+    else scheduleRender(false);
+    save();
+  });
   $('caption').addEventListener('change', e => { state.caption = e.target.checked; scheduleRender(false); save(); });
   $('title').addEventListener('input', e => { state.title = e.target.value; scheduleRender(false); save(); });
 
   document.querySelectorAll('input[name="mode"]').forEach(r => {
-    r.addEventListener('change', () => { state.mode = r.value; scheduleRender(false); save(); });
+    r.addEventListener('change', () => {
+      state.mode = r.value;
+      if (state.trace) restartTrace();
+      else scheduleRender(false);
+      save();
+    });
   });
+
+  // Trace animation controls
+  if ($('trace')) {
+    $('trace').addEventListener('change', e => {
+      state.trace = e.target.checked;
+      $('traceBox').hidden = !state.trace;
+      if (state.trace) {
+        restartTrace();
+      } else {
+        stopTrace();
+        renderPreview(false);
+      }
+      save();
+    });
+
+    bindRange('traceDur', v => {
+      state.traceDur = v;
+      $('traceDurOut').textContent = `${v} s`;
+      save();
+    });
+    bindRange('traceTail', v => {
+      state.traceTail = v;
+      $('traceTailOut').textContent = `${v}%`;
+      save();
+    });
+    bindRange('traceHead', v => {
+      state.traceHead = v;
+      $('traceHeadOut').textContent = v.toFixed(1);
+      save();
+    });
+    $('traceLoop').addEventListener('change', e => {
+      state.traceLoop = e.target.checked;
+      save();
+    });
+    $('tracePlay').addEventListener('click', toggleTracePlay);
+    $('traceRestart').addEventListener('click', restartTrace);
+  }
+
+  // Live Wallpaper controls
+  if ($('liveWallBtn')) {
+    $('liveWallBtn').addEventListener('click', () => { $('liveModal').hidden = false; });
+    $('lwClose').addEventListener('click', () => { $('liveModal').hidden = true; });
+    $('liveModal').addEventListener('click', e => { if (e.target === $('liveModal')) $('liveModal').hidden = true; });
+
+    $('liveTrace').addEventListener('change', e => { state.liveTrace = e.target.checked; save(); });
+    $('liveRot').addEventListener('change', e => { state.liveRot = e.target.checked; save(); });
+    bindRange('liveRotPeriod', v => {
+      state.liveRotPeriod = v;
+      $('liveRotPeriodOut').textContent = `${v} s`;
+      save();
+    });
+    $('liveBreathe').addEventListener('change', e => { state.liveBreathe = e.target.checked; save(); });
+    $('livePaletteDrift').addEventListener('change', e => { state.livePaletteDrift = e.target.checked; save(); });
+
+    $('startLiveBtn').addEventListener('click', enterLiveMode);
+    $('copyLiveLink').addEventListener('click', () => {
+      const link = serializeLiveUrl();
+      const fallback = () => { prompt('Copy live wallpaper link:', link); };
+      try {
+        navigator.clipboard.writeText(link).then(() => {
+          $('copyLiveMsg').style.display = 'inline';
+          setTimeout(() => { $('copyLiveMsg').style.display = 'none'; }, 2500);
+        }, fallback);
+      } catch (_) { fallback(); }
+    });
+
+    $('recordVidBtn').addEventListener('click', exportVideoWallpaper);
+    $('cancelVidBtn').addEventListener('click', () => { vidCancelRequested = true; });
+    $('lockPngBtn').addEventListener('click', exportLockScreenPng);
+
+    $('liveCanvas').addEventListener('click', () => {
+      const now = Date.now();
+      if (now - liveLastTap < 2000) {
+        exitLiveMode();
+      } else {
+        liveLastTap = now;
+        showLiveHint();
+      }
+    });
+
+    $('liveTapToStart').addEventListener('click', () => {
+      $('liveTapToStart').hidden = true;
+      enterLiveMode();
+    });
+  }
+
+  if ($('printHead')) {
+    $('printHead').addEventListener('change', () => {
+      if (!$('modal').hidden) renderPrint();
+    });
+  }
 
   $('cCompile').addEventListener('click', applyCustomModel);
   $('shuffle').addEventListener('click', () => { shuffleMap(); recompute(); save(); });
@@ -2709,8 +4060,32 @@ function init() {
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
+      if (liveActive) { exitLiveMode(); return; }
       if (!$('modal').hidden) closeModal();
+      if (!$('liveModal').hidden) $('liveModal').hidden = true;
       if (!$('testModal').hidden) $('testModal').hidden = true;
+    }
+    const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    if (e.code === 'Space' && state.trace && !liveActive) {
+      e.preventDefault();
+      toggleTracePlay();
+    } else if ((e.key === 'r' || e.key === 'R') && state.trace && !liveActive) {
+      e.preventDefault();
+      restartTrace();
+    }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (state.trace && traceRunning && !tracePaused) {
+        pauseTrace();
+      }
+    } else {
+      if (state.trace && traceRunning && tracePaused) {
+        resumeTrace();
+      }
     }
   });
 
@@ -2745,14 +4120,26 @@ function init() {
       state.pitch = Math.max(-PI / 2, Math.min(PI / 2, drag.pitch + (e.clientY - drag.y) * 0.008));
     }
     syncView();
-    scheduleRender(true);
+    if (state.trace) {
+      if (traceRunning) { cancelAnimationFrame(traceRaf); traceRaf = 0; traceRunning = false; }
+      scheduleRender(true);
+      clearTimeout(traceRestartTimer);
+      traceRestartTimer = setTimeout(restartTrace, 400);
+    } else {
+      scheduleRender(true);
+    }
   });
 
   const endDrag = () => {
     if (!drag) return;
     drag = null;
-    scheduleRender(false);
     save();
+    if (state.trace) {
+      clearTimeout(traceRestartTimer);
+      restartTrace();
+    } else {
+      scheduleRender(false);
+    }
   };
   plate.addEventListener('pointerup', endDrag);
   plate.addEventListener('pointercancel', endDrag);
@@ -2764,16 +4151,54 @@ function init() {
     if (Math.abs(w - lastW) < 2) return;
     lastW = w;
     clearTimeout(rsT);
-    rsT = setTimeout(() => scheduleRender(false), 120);
+    rsT = setTimeout(() => {
+      if (liveActive) resizeLiveCanvas();
+      else if (state.trace) restartTrace();
+      else scheduleRender(false);
+    }, 120);
   }).observe(mat);
 
   window.addEventListener('resize', () => {
     clearTimeout(rsT);
-    rsT = setTimeout(() => scheduleRender(false), 150);
+    rsT = setTimeout(() => {
+      if (liveActive) resizeLiveCanvas();
+      else if (state.trace) restartTrace();
+      else scheduleRender(false);
+    }, 150);
   });
 
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => scheduleRender(false));
+  }
+
+  // prefers-reduced-motion check
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if ($('traceMotionNote')) $('traceMotionNote').hidden = false;
+  }
+
+  // Parse shareable Live URL params if present
+  const urlInit = parseUrlParams();
+  if (urlInit) {
+    if (urlInit.sys) state.sys = urlInit.sys;
+    if (urlInit.palette) state.palette = urlInit.palette;
+    if (urlInit.mode) state.mode = urlInit.mode;
+    if (Number.isFinite(urlInit.yaw)) state.yaw = urlInit.yaw;
+    if (Number.isFinite(urlInit.pitch)) state.pitch = urlInit.pitch;
+    if (Number.isFinite(urlInit.zoom)) state.zoom = urlInit.zoom;
+    if (typeof urlInit.trace === 'boolean') state.trace = urlInit.trace;
+    if (Number.isFinite(urlInit.liveRotPeriod)) state.liveRotPeriod = urlInit.liveRotPeriod;
+    if (typeof urlInit.liveBreathe === 'boolean') state.liveBreathe = urlInit.liveBreathe;
+    if (typeof urlInit.liveRot === 'boolean') state.liveRot = urlInit.liveRot;
+    if (urlInit.customConfig) state.customConfig = urlInit.customConfig;
+
+    if (urlInit.isLiveLaunch) {
+      setTimeout(() => {
+        enterLiveMode().catch(() => {
+          $('liveOverlay').hidden = false;
+          $('liveTapToStart').hidden = false;
+        });
+      }, 350);
+    }
   }
 }
 

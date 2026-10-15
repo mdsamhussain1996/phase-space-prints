@@ -61,13 +61,26 @@ const sandbox = {
   },
   window: {
     innerWidth: 1024, innerHeight: 768,
+    location: { href: 'https://mdsamhussain1996.github.io/phase-space-prints/', search: '' },
     matchMedia: () => ({ matches: false }),
     addEventListener: () => {}
   },
   getComputedStyle: () => ({ paddingLeft: '20px', paddingRight: '20px' }),
   ResizeObserver: class { observe() {} },
   requestAnimationFrame: (fn) => setTimeout(fn, 0),
-  localStorage: { getItem: () => null, setItem: () => {} }
+  cancelAnimationFrame: (id) => clearTimeout(id),
+  URL,
+  URLSearchParams,
+  Blob,
+  localStorage: (() => {
+    const store = {};
+    return {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+      clear: () => { for (const k in store) delete store[k]; }
+    };
+  })()
 };
 
 const context = vm.createContext(sandbox);

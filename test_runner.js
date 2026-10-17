@@ -170,6 +170,16 @@ vm.runInContext(`
     throw new Error('URL round-trip mismatch: ' + JSON.stringify(p));
   }
   console.log('✅ PASS: Direct URL round-trip preserves lspeed, dur, from, eq, live, trace');
+
+  // 7. Phase 1: Halvorsen canonical parameter and Aizawa 3/4 view
+  if (SYS.halvorsen.params[0].v !== 1.4) throw new Error('SYS.halvorsen parameter a must default to 1.4');
+  if (SYS.aizawa.view[0] < 0.5 || SYS.aizawa.view[1] > -0.4) throw new Error('SYS.aizawa default view must be 3/4 angle');
+  console.log('✅ PASS: Direct Phase 1 Halvorsen & Aizawa default views verified');
+
+  // 8. Phase 1: Flow domains tuned and bounded
+  if (SYS.vdp.dom[0] < -3.5 || SYS.vdp.dom[1] > 3.5) throw new Error('SYS.vdp domain out of expected range');
+  if (Math.abs(SYS.pendulum.dom[1] / SYS.pendulum.dom[3]) > 2.5) throw new Error('SYS.pendulum domain aspect ratio unbalanced');
+  console.log('✅ PASS: Direct Phase 1 flow domains verified');
 `, context);
 
 console.log('\n✨ ALL TESTS PASSED SUCCESSFULLY! ✨');

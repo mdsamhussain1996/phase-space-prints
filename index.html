@@ -4,6 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Phase Space Prints — Mathematical Dynamical Systems Art</title>
+<meta name="description" content="Render chaotic attractors, fractional-order systems, iterated maps, and custom differential equations as gallery-quality posters and live wallpapers.">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mdsamhussain1996.github.io/phase-space-prints/">
+<meta property="og:title" content="Phase Space Prints — Mathematical Dynamical Systems Art">
+<meta property="og:description" content="Render chaotic attractors, fractional-order systems, iterated maps, and custom differential equations as gallery-quality posters and live wallpapers.">
+<meta property="og:image" content="https://mdsamhussain1996.github.io/phase-space-prints/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://mdsamhussain1996.github.io/phase-space-prints/">
+<meta name="twitter:title" content="Phase Space Prints — Mathematical Dynamical Systems Art">
+<meta name="twitter:description" content="Render chaotic attractors, fractional-order systems, iterated maps, and custom differential equations as gallery-quality posters and live wallpapers.">
+<meta name="twitter:image" content="https://mdsamhussain1996.github.io/phase-space-prints/og-image.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -97,6 +115,9 @@
 }
 
 * { box-sizing: border-box; }
+html, body {
+  overflow-x: hidden;
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -137,6 +158,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Main Layout Grid */
@@ -448,6 +470,21 @@ input[type="range"] {
   font-size: 0.75rem;
 }
 .top-actions .btn { white-space: nowrap; }
+@media (max-width: 600px) {
+  .top {
+    padding-top: 14px;
+    padding-bottom: 12px;
+  }
+  .top-actions {
+    width: 100%;
+    gap: 6px;
+  }
+  .top-actions .btn {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+  }
+}
 
 /* Elements marked `hidden` must stay hidden even when a class gives them display:flex/grid */
 [hidden] { display: none !important; }
@@ -1060,7 +1097,7 @@ const SYS = {
       o[1] = p.d * x + (z - p.b) * y;
       o[2] = p.c + p.a * z - (z * z * z) / 3 - (x * x + y * y) * (1 + p.e * z) + p.f * z * x * x * x;
     },
-    x0: [0.1, 0, 0], dt: 0.01, h: 0.01, view: [0.3, -0.3, 1]
+    x0: [0.1, 0, 0], dt: 0.01, h: 0.01, view: [0.61, -0.44, 1]
   },
   thomas: {
     group: 'Strange attractors', name: 'Thomas', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
@@ -1071,7 +1108,7 @@ const SYS = {
   },
   halvorsen: {
     group: 'Strange attractors', name: 'Halvorsen', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
-    params: [P('a', 'a', 1.3, 2.4, 0.01, 1.89)],
+    params: [P('a', 'a', 1.3, 2.4, 0.01, 1.4)],
     rhs: ['−ax − 4y − 4z − y²', '−ay − 4z − 4x − z²', '−az − 4x − 4y − x²'],
     f: (x, y, z, t, p, o) => {
       o[0] = -p.a * x - 4 * y - 4 * z - y * y;
@@ -1130,14 +1167,14 @@ const SYS = {
     params: [P('m', 'μ', 0.1, 4, 0.05, 1.5)],
     lines: ['ẋ = y', 'ẏ = μ(1 − x²)y − x'],
     f2: (x, y, p, o) => { o[0] = y; o[1] = p.m * (1 - x * x) * y - x; },
-    dom: [-4, 4, -4, 4], S: 700, dt: 0.012, view: [0, 0, 1]
+    dom: [-3.2, 3.2, -3.8, 3.8], S: 600, dt: 0.01, view: [0, 0, 1]
   },
   pendulum: {
     group: 'Phase portraits', name: 'Damped pendulum flow', kind: 'flow',
     params: [P('b', 'b', 0, 0.8, 0.005, 0.15)],
     lines: ['θ̇ = ω', 'ω̇ = −bω − sin θ'],
     f2: (x, y, p, o) => { o[0] = y; o[1] = -p.b * y - Math.sin(x); },
-    dom: [-2 * PI, 2 * PI, -3, 3], S: 1600, dt: 0.01, view: [0, 0, 1]
+    dom: [-1.5 * PI, 1.5 * PI, -3.2, 3.2], S: 1400, dt: 0.01, view: [0, 0, 1]
   },
 
   /* Custom Model Placeholder */
@@ -2264,7 +2301,9 @@ async function runGL(d, p, q, n, yf, optStart) {
 async function runFlow(d, p, G, yf) {
   const S = d.S, dt = d.dt, h2 = dt / 2, h6 = dt / 6;
   const [x0, x1, y0, y1] = d.dom, f = d.f2;
-  const total = G * G * (S + 1);
+  const padX = (x1 - x0) * 0.08, padY = (y1 - y0) * 0.08;
+  const xMin = x0 - padX, xMax = x1 + padX, yMin = y0 - padY, yMax = y1 + padY;
+  const total = G * G * (S + 2);
   const pts = new Float32Array(total * 3), tt = new Float32Array(total);
   const a = [0, 0], b = [0, 0], c = [0, 0], e = [0, 0];
   let k = 0;
@@ -2274,6 +2313,7 @@ async function runFlow(d, p, G, yf) {
       let x = x0 + ((x1 - x0) * (gi + 0.5)) / G;
       let y = y0 + ((y1 - y0) * (gj + 0.5)) / G;
       for (let s = 0; s < S; s++) {
+        if (x < xMin || x > xMax || y < yMin || y > yMax) break;
         pts[k * 3] = x; pts[k * 3 + 1] = y; pts[k * 3 + 2] = 0;
         tt[k] = s / S;
         k++;
@@ -2285,8 +2325,6 @@ async function runFlow(d, p, G, yf) {
 
         x += h6 * (a[0] + 2 * b[0] + 2 * c[0] + e[0]);
         y += h6 * (a[1] + 2 * b[1] + 2 * c[1] + e[1]);
-
-        if (!(Math.abs(x) + Math.abs(y) < 1e3)) break;
       }
       pts[k * 3] = NaN; pts[k * 3 + 1] = NaN; pts[k * 3 + 2] = NaN;
       tt[k] = 0;
@@ -2528,34 +2566,57 @@ function buildView(W, H, opt) {
         pd = 0;
       };
 
-  // Compute projected bounding box
+  // Compute projected bounding box with robust auto-framing (0.5th–99.5th percentile + 6% padding)
   let umin = Infinity, umax = -Infinity, vmin = Infinity, vmax = -Infinity, dmin = Infinity, dmax = -Infinity;
   const p = opt.p || state.p, o2 = [0, 0];
+  const uArr = [], vArr = [], dArr = [];
 
   if (kind === 'map') {
     let x = 0.1, y = 0.1;
-    for (let i = 0; i < 20100; i++) {
+    const mapSamples = 30000;
+    for (let i = 0; i < mapSamples + 100; i++) {
       d.step(x, y, p, o2); x = o2[0]; y = o2[1];
       if (i < 100) continue;
       proj(x, y);
-      if (pu < umin) umin = pu; if (pu > umax) umax = pu;
-      if (pv < vmin) vmin = pv; if (pv > vmax) vmax = pv;
+      uArr.push(pu); vArr.push(pv);
     }
   } else if (cache && cache.pts) {
     const { pts, n, start } = cache;
-    const st = Math.max(1, Math.floor((n - start) / 250000));
+    const span = Math.max(1, n - start);
+    const st = Math.max(1, Math.floor(span / 50000));
     for (let i = start; i < n; i += st) {
       const k = i * 3, x = pts[k];
       if (x !== x) continue;
       proj(x, pts[k + 1], pts[k + 2]);
-      if (pu < umin) umin = pu; if (pu > umax) umax = pu;
-      if (pv < vmin) vmin = pv; if (pv > vmax) vmax = pv;
-      if (pd < dmin) dmin = pd; if (pd > dmax) dmax = pd;
+      uArr.push(pu); vArr.push(pv);
+      if (three) dArr.push(pd);
+    }
+  }
+
+  if (uArr.length > 0) {
+    uArr.sort((a, b) => a - b);
+    vArr.sort((a, b) => a - b);
+    const len = uArr.length;
+    let i0 = Math.floor(len * 0.005);
+    let i1 = Math.min(len - 1, Math.floor(len * 0.995));
+    if (len < 20) { i0 = 0; i1 = len - 1; }
+    umin = uArr[i0]; umax = uArr[i1];
+    vmin = vArr[i0]; vmax = vArr[i1];
+    if (dArr.length > 0) {
+      dArr.sort((a, b) => a - b);
+      dmin = dArr[i0]; dmax = dArr[i1];
     }
   }
 
   if (!(umax > umin)) { umin -= 0.5; umax += 0.5; }
   if (!(vmax > vmin)) { vmin -= 0.5; vmax += 0.5; }
+  if (three && !(dmax > dmin)) { dmin -= 0.5; dmax += 0.5; }
+
+  // 6% padding per axis preserving aspect ratio
+  const spanU = umax - umin, spanV = vmax - vmin;
+  const padU = spanU * 0.06, padV = spanV * 0.06;
+  umin -= padU; umax += padU;
+  vmin -= padV; vmax += padV;
 
   const S = Math.min(box.w / (umax - umin), box.h / (vmax - vmin)) * zoom;
   const uc = (umin + umax) / 2, vc = (vmin + vmax) / 2;
@@ -5688,6 +5749,76 @@ function runUnitTests() {
     Object.assign(state, savedState);
   } catch (e) {
     assert('Glow-from-start live wallpaper & light speed tests', false, e.message);
+  }
+
+  log.push('\n=== 22. Halvorsen Coverage & Auto-Framing Invariants ===');
+  try {
+    // 1. Halvorsen coverage test (> 15% of plate area)
+    const halvDef = SYS.halvorsen;
+    assert('SYS.halvorsen is defined and has canonical chaotic parameter', halvDef && halvDef.params[0].v === 1.4);
+    assert('SYS.aizawa default view is 3/4 view', SYS.aizawa.view[1] <= -0.4 && SYS.aizawa.view[0] >= 0.5);
+
+    // Compute coverage with 40k points
+    const hPts = new Float32Array(40000 * 3);
+    const hf = halvDef.f, hp = { a: 1.4 }, hdt = halvDef.dt;
+    const hh2 = hdt / 2, hh6 = hdt / 6;
+    let hx = halvDef.x0[0], hy = halvDef.x0[1], hz = halvDef.x0[2];
+    const ha = [0,0,0], hb = [0,0,0], hc = [0,0,0], he = [0,0,0];
+    for (let i = 0; i < 40000; i++) {
+      hf(hx, hy, hz, 0, hp, ha);
+      hf(hx + hh2 * ha[0], hy + hh2 * ha[1], hz + hh2 * ha[2], hh2, hp, hb);
+      hf(hx + hh2 * hb[0], hy + hh2 * hb[1], hz + hh2 * hb[2], hh2, hp, hc);
+      hf(hx + hdt * hc[0], hy + hdt * hc[1], hz + hdt * hc[2], hdt, hp, he);
+      hx += hh6 * (ha[0] + 2*hb[0] + 2*hc[0] + he[0]);
+      hy += hh6 * (ha[1] + 2*hb[1] + 2*hc[1] + he[1]);
+      hz += hh6 * (ha[2] + 2*hb[2] + 2*hc[2] + he[2]);
+      hPts[i * 3] = hx; hPts[i * 3 + 1] = hy; hPts[i * 3 + 2] = hz;
+    }
+    const savedCacheH = cache, savedCurH = cur;
+    cache = { pts: hPts, n: 40000, start: 400, kind: 'rk4', info: 'test' };
+    cur = { id: 'halvorsen', def: halvDef, name: 'Halvorsen', view: halvDef.view, over: {} };
+    const hView = buildView(200, 200, { caption: false });
+    assert('Halvorsen auto-framing provides padding and non-zero span', hView.umax > hView.umin && hView.vmax > hView.vmin);
+
+    // Count density pixels on 200x200 canvas
+    let hPixelsLit = 0;
+    const hCtx = {
+      fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+      createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: (img) => {
+        const bgR = img.data[0], bgG = img.data[1], bgB = img.data[2];
+        for (let p = 0; p < img.data.length; p += 4) {
+          if (img.data[p] !== bgR || img.data[p+1] !== bgG || img.data[p+2] !== bgB) hPixelsLit++;
+        }
+      },
+      drawImage: () => {}, save: () => {}, restore: () => {}
+    };
+    renderArt(hCtx, 200, 200, { caption: false, fast: false });
+    const coveragePct = (hPixelsLit / (hView.box.w * hView.box.h)) * 100;
+    assert('Halvorsen rendered density covers > 15% of the plate', coveragePct > 15);
+
+    // 2. Dadras percentile auto-framing invariant: filters transient spike
+    const dadDef = SYS.dadras;
+    const dPts = new Float32Array(5000 * 3);
+    dPts[0] = 500; dPts[1] = -500; dPts[2] = 500;
+    for (let i = 1; i < 5000; i++) {
+      dPts[i * 3] = Math.sin(i * 0.1) * 10;
+      dPts[i * 3 + 1] = Math.cos(i * 0.1) * 10;
+      dPts[i * 3 + 2] = Math.sin(i * 0.2) * 5;
+    }
+    cache = { pts: dPts, n: 5000, start: 0, kind: 'rk4', info: 'test' };
+    cur = { id: 'dadras', def: dadDef, name: 'Dadras', view: dadDef.view, over: {} };
+    const dView = buildView(200, 200, { caption: false, yaw: 0, pitch: 0 });
+    assert('Auto-framing 99.5th percentile excludes transient outliers (umax < 50)', dView.umax < 50);
+
+    // 3. Flow domain bounding & NaN breaks
+    assert('VDP domain is tuned for frame filling', SYS.vdp.dom[0] >= -3.5 && SYS.vdp.dom[1] <= 3.5);
+    assert('Pendulum domain aspect ratio is balanced', Math.abs(SYS.pendulum.dom[1] / SYS.pendulum.dom[3]) < 2.5);
+
+    cache = savedCacheH;
+    cur = savedCurH;
+  } catch (e) {
+    assert('Halvorsen coverage & auto-framing invariants', false, e.message);
   }
 
   log.push(`\n========================================`);

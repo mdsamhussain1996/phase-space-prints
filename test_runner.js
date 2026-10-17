@@ -204,6 +204,25 @@ vm.runInContext(`
   const dropP = qvnn.params.find(p => p.k === 'drop');
   if (!dropP || dropP.type !== 'select' || dropP.options.length !== 4) throw new Error('SYS.qvnn drop dropdown invalid');
   console.log('✅ PASS: Direct Phase 3 Neural Dynamics & QVNN invariants verified');
+
+  // 11. Phase 4: 2D Iterated Maps invariants
+  const p4Keys = ['svensson', 'ikeda', 'bedhead', 'gumowski'];
+  const out2 = [0, 0];
+  for (const k of p4Keys) {
+    const m = SYS[k];
+    if (!m) throw new Error('Missing map: ' + k);
+    if (m.group !== 'Iterated maps' || m.kind !== 'map') throw new Error(k + ' must be in Iterated maps');
+    if (typeof m.step !== 'function') throw new Error(k + ' must have step function');
+    const mp = {};
+    for (const p of m.params) mp[p.k] = p.v;
+    let mx = m.x0 ? m.x0[0] : 0.1, my = m.x0 ? m.x0[1] : 0.1;
+    for (let s = 0; s < 1000; s++) {
+      m.step(mx, my, mp, out2);
+      mx = out2[0]; my = out2[1];
+    }
+    if (!Number.isFinite(mx) || !Number.isFinite(my) || Math.abs(mx) > 1e4) throw new Error(k + ' diverged in test');
+  }
+  console.log('✅ PASS: Direct Phase 4 2D Iterated Maps invariants verified');
 `, context);
 
 console.log('\n✨ ALL TESTS PASSED SUCCESSFULLY! ✨');

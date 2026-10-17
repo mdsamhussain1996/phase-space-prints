@@ -16,11 +16,23 @@ Phase Space Prints is a standalone, self-contained single-page web app built wit
 - **Strange Attractors (3-D, Fractional-Capable)**:
   - Lorenz ($\sigma=10, \rho=28, \beta=8/3$)
   - Rössler ($a=0.2, b=0.2, c=5.7$)
-  - Aizawa ($a=0.95, b=0.7, c=0.6, d=3.5, e=0.25, f=0.1$)
+  - Aizawa ($a=0.95, b=0.7, c=0.6, d=3.5, e=0.25, f=0.1$, 3/4 default angle)
   - Thomas ($b=0.208186$, cyclic)
-  - Halvorsen ($a=1.89$, cyclic)
-  - Dadras ($a=3, b=2.7, c=1.7, d=2, e=9$)
+  - Halvorsen ($a=1.40$, canonical 3-lobed chaotic attractor)
+  - Dadras ($a=3, b=2.7, c=1.7, d=2, e=9$, transient-spike filtered auto-framing)
   - Chen ($a=35, b=3, c=28$)
+- **Strange Attractors II (New Group)**:
+  - Lü–Chen ($a=36, b=3, c=20$, $\lambda_1 \approx 1.38$)
+  - Chua circuit ($m_0=-1.143, m_1=-0.714, \alpha=15.6, \beta=28$, double-scroll)
+  - Rucklidge ($k=2, \alpha=6.7$, $\lambda_1 \approx 0.18$)
+  - Burke–Shaw ($s=10, v=4.272$, $\lambda_1 \approx 0.68$)
+  - Three-scroll (TSUCS) ($a=40, b=55, c=1.833, d=0.16, e=0.65, f=20$, $\lambda_1 > 0$)
+  - Rabinovich–Fabrikant ($\alpha=0.14, \gamma=0.10$, sensitive chaos)
+  - Sprott (2014) ($a=2.07, b=1.79$, quadratic flow)
+- **Neural Dynamics (New Group)**:
+  - Chaotic Hopfield network ($\dot{x} = -x + W \tanh(x)$ with interactive $w_{21}$ and $w_{33}$ parameter sliders, $\lambda_1 \approx 0.056$)
+  - Fractional Hopfield network ($q=0.95$ using Grünwald–Letnikov solver)
+  - Quaternion-Valued Neural Network (4-D QVNN projected to 3-D with dropdown selector to drop $r, i, j$, or $k$; verified chaos with $\lambda_1 \approx 0.032$)
 - **Fractional-Order Presets**:
   - Solved with the explicit Grünwald–Letnikov scheme (Petráš algorithm) with memory window $L=1000$:
     - Fractional Lorenz ($q=0.995, h=0.005$)
@@ -29,11 +41,15 @@ Phase Space Prints is a standalone, self-contained single-page web app built wit
 - **Iterated Maps (2-D)**:
   - Clifford Map ($a=-1.4, b=1.6, c=1, d=0.7$)
   - Peter de Jong Map ($a=1.4, b=-2.3, c=2.4, d=-2.1$)
+  - Svensson Map ($a=1.4, b=1.56, c=1.4, d=-1.56$, 50%+ density coverage)
+  - Ikeda Map ($u=0.9, c_1=0.4, c_2=6.0$, optical cavity chaos)
+  - Bedhead Map ($a=-0.81, b=-0.92$)
+  - Gumowski–Mira Map ($\mu=-0.49, \alpha=0.008, \sigma=0.05$)
 - **Forced Oscillators**:
   - Ueda–Duffing Oscillator ($\ddot{x} + \delta \dot{x} + \alpha x + \beta x^3 = \gamma \cos \omega t$) sampled once per forcing period (Poincaré section).
 - **Phase Portraits**:
-  - Van der Pol flow ($G \times G$ grid of trajectories, NaN-separated).
-  - Damped pendulum flow.
+  - Van der Pol flow (grid of trajectories bounded to domain, no vertical streaks).
+  - Damped pendulum flow (balanced domain and NaN separators).
 - **Write Your Own Equations**:
   - Custom equations parser compiling arbitrary 2-D and 3-D ODEs with user constants into closures on a shared `Float64Array`.
   - Default: Nosé–Hoover (Sprott A): $\dot{x} = y, \dot{y} = -x + yz, \dot{z} = a - y^2, a=1, x_0=(0, 5, 0)$.

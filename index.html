@@ -1295,7 +1295,52 @@ const SYS = {
     params: [P('a', 'a', -3, 3, 0.001, 1.4), P('b', 'b', -3, 3, 0.001, -2.3), P('c', 'c', -3, 3, 0.001, 2.4), P('d', 'd', -3, 3, 0.001, -2.1)],
     lines: ['xₙ₊₁ = sin(a yₙ) − cos(b xₙ)', 'yₙ₊₁ = sin(c xₙ) − cos(d yₙ)'],
     step: (x, y, p, o) => { o[0] = Math.sin(p.a * y) - Math.cos(p.b * x); o[1] = Math.sin(p.c * x) - Math.cos(p.d * y); },
-    start: '(x₀, y₀) = (0.1, 0.1)', view: [0, 0, 1]
+    start: '(x₀, y₀) = (0.1, 0.1)', x0: [0.1, 0.1], view: [0, 0, 1]
+  },
+  svensson: {
+    group: 'Iterated maps', name: 'Svensson map', kind: 'map',
+    params: [P('a', 'a', -3, 3, 0.001, 1.4), P('b', 'b', -3, 3, 0.001, 1.56), P('c', 'c', -3, 3, 0.001, 1.4), P('d', 'd', -3, 3, 0.001, -1.56)],
+    lines: ['xₙ₊₁ = d sin(a xₙ) − sin(b yₙ)', 'yₙ₊₁ = c cos(a xₙ) + cos(b yₙ)'],
+    step: (x, y, p, o) => {
+      o[0] = p.d * Math.sin(p.a * x) - Math.sin(p.b * y);
+      o[1] = p.c * Math.cos(p.a * x) + Math.cos(p.b * y);
+    },
+    start: '(x₀, y₀) = (0.1, 0.1)', x0: [0.1, 0.1], view: [0, 0, 1]
+  },
+  ikeda: {
+    group: 'Iterated maps', name: 'Ikeda map', kind: 'map',
+    params: [P('u', 'u', 0.5, 1.0, 0.005, 0.9), P('c1', 'c₁', 0.1, 1.0, 0.01, 0.4), P('c2', 'c₂', 2.0, 10.0, 0.1, 6.0)],
+    lines: ['tₙ = c₁ − c₂ / (1 + xₙ² + yₙ²)', 'xₙ₊₁ = 1 + u(xₙ cos tₙ − yₙ sin tₙ)', 'yₙ₊₁ = u(xₙ sin tₙ + yₙ cos tₙ)'],
+    step: (x, y, p, o) => {
+      const c1 = p.c1 ?? 0.4, c2 = p.c2 ?? 6.0;
+      const t = c1 - c2 / (1 + x * x + y * y);
+      const ct = Math.cos(t), st = Math.sin(t);
+      o[0] = 1 + p.u * (x * ct - y * st);
+      o[1] = p.u * (x * st + y * ct);
+    },
+    start: '(x₀, y₀) = (0.1, 0.1)', x0: [0.1, 0.1], view: [0, 0, 1]
+  },
+  bedhead: {
+    group: 'Iterated maps', name: 'Bedhead map', kind: 'map',
+    params: [P('a', 'a', -2.5, 2.5, 0.005, -0.81), P('b', 'b', -2.5, 2.5, 0.005, -0.92)],
+    lines: ['xₙ₊₁ = sin(xₙ yₙ / b) + cos(a xₙ − yₙ)', 'yₙ₊₁ = xₙ + sin(yₙ) / b'],
+    step: (x, y, p, o) => {
+      o[0] = Math.sin(x * y / p.b) + Math.cos(p.a * x - y);
+      o[1] = x + Math.sin(y) / p.b;
+    },
+    start: '(x₀, y₀) = (0.1, 0.1)', x0: [0.1, 0.1], view: [0, 0, 1]
+  },
+  gumowski: {
+    group: 'Iterated maps', name: 'Gumowski–Mira map', kind: 'map',
+    params: [P('mu', 'μ', -0.8, 0.2, 0.005, -0.49), P('alpha', 'α', 0.001, 0.05, 0.001, 0.008), P('sigma', 'σ', 0.01, 0.1, 0.005, 0.05)],
+    lines: ['f(x) = μx + 2(1−μ)x² / (1+x²)', 'xₙ₊₁ = yₙ + α(1−σyₙ²)yₙ + f(xₙ)', 'yₙ₊₁ = −xₙ + f(xₙ₊₁)'],
+    step: (x, y, p, o) => {
+      const f = (v) => p.mu * v + (2 * (1 - p.mu) * v * v) / (1 + v * v);
+      const nx = y + p.alpha * (1 - p.sigma * y * y) * y + f(x);
+      const ny = -x + f(nx);
+      o[0] = nx; o[1] = ny;
+    },
+    start: '(x₀, y₀) = (0.1, 0.1)', x0: [0.1, 0.1], view: [0, 0, 1]
   },
 
   /* Forced Oscillators */
@@ -2762,7 +2807,7 @@ function buildView(W, H, opt) {
   const uArr = [], vArr = [], dArr = [];
 
   if (kind === 'map') {
-    let x = 0.1, y = 0.1;
+    let x = (d.x0 ? d.x0[0] : 0.1), y = (d.x0 ? d.x0[1] : 0.1);
     const mapSamples = 30000;
     for (let i = 0; i < mapSamples + 100; i++) {
       d.step(x, y, p, o2); x = o2[0]; y = o2[1];
@@ -2889,7 +2934,7 @@ function renderArt(ctx, W, H, opt) {
   if (kind === 'map') {
     const total = Math.max(1000, Math.round(opt.mapN || DETAIL.map[state.detail]));
     const jumpPx = base * 0.5;
-    let x = 0.1, y = 0.1, lx = 0, ly = 0;
+    let x = (d.x0 ? d.x0[0] : 0.1), y = (d.x0 ? d.x0[1] : 0.1), lx = 0, ly = 0;
     for (let i = 0; i < total + 100; i++) {
       d.step(x, y, p, o2); x = o2[0]; y = o2[1];
       if (i < 100) continue;
@@ -6242,6 +6287,40 @@ function runUnitTests() {
     cur = savedCur2;
   } catch (err) {
     assert('Neural dynamics tests', false, err.message);
+  }
+
+  log.push('\n=== 25. New 2-D Iterated Maps Invariants ===');
+  try {
+    const p4Keys = ['svensson', 'ikeda', 'bedhead', 'gumowski'];
+    for (const key of p4Keys) {
+      const def = SYS[key];
+      assert(`SYS.${key} is defined in Iterated maps`, !!def && def.group === 'Iterated maps' && def.kind === 'map');
+      assert(`SYS.${key} has step function and equations lines`, typeof def.step === 'function' && def.lines.length >= 2);
+
+      const p = {};
+      for (const pp of def.params) p[pp.k] = pp.v;
+      const savedCur3 = cur;
+      cur = { id: key, def, name: def.name, view: def.view, over: p };
+      const v = buildView(200, 200, { caption: false, p });
+      let lit = 0;
+      const dummyCtx = {
+        fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+        createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+        putImageData: (img) => {
+          const bgR = img.data[0], bgG = img.data[1], bgB = img.data[2];
+          for (let pi = 0; pi < img.data.length; pi += 4) {
+            if (img.data[pi] !== bgR || img.data[pi+1] !== bgG || img.data[pi+2] !== bgB) lit++;
+          }
+        },
+        drawImage: () => {}, save: () => {}, restore: () => {}
+      };
+      renderArt(dummyCtx, 200, 200, { caption: false, fast: false, mapN: 30000, p });
+      const cov = (lit / (v.box.w * v.box.h)) * 100;
+      assert(`SYS.${key} rendered density coverage > 15% (actual: ${cov.toFixed(1)}%)`, cov > 15);
+      cur = savedCur3;
+    }
+  } catch (err) {
+    assert('New 2-D maps tests', false, err.message);
   }
 
   log.push(`\n========================================`);

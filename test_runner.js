@@ -192,6 +192,18 @@ vm.runInContext(`
     if (!s.rhs || s.rhs.length !== 3) throw new Error(k + ' must have 3 Unicode rhs expressions');
   }
   console.log('✅ PASS: Direct Phase 2 Strange attractors II definitions verified');
+
+  // 10. Phase 3: Neural Dynamics & QVNN 4D projection invariants
+  if (!GROUPS.includes('Neural dynamics')) throw new Error('GROUPS must contain Neural dynamics');
+  const hop = SYS.hopfield;
+  if (!hop || hop.group !== 'Neural dynamics' || !hop.frac) throw new Error('SYS.hopfield invalid');
+  const fHop = SYS.fHopfield;
+  if (!fHop || fHop.base !== 'hopfield' || fHop.q !== 0.95) throw new Error('SYS.fHopfield invalid');
+  const qvnn = SYS.qvnn;
+  if (!qvnn || qvnn.dim !== 4 || qvnn.vars.length !== 4) throw new Error('SYS.qvnn invalid');
+  const dropP = qvnn.params.find(p => p.k === 'drop');
+  if (!dropP || dropP.type !== 'select' || dropP.options.length !== 4) throw new Error('SYS.qvnn drop dropdown invalid');
+  console.log('✅ PASS: Direct Phase 3 Neural Dynamics & QVNN invariants verified');
 `, context);
 
 console.log('\n✨ ALL TESTS PASSED SUCCESSFULLY! ✨');

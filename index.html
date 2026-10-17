@@ -1067,7 +1067,7 @@ input[type="range"] {
 'use strict';
 const PI = Math.PI;
 const P = (k, label, min, max, step, v) => ({ k, label, min, max, step, v });
-const DOT = { x: 'ẋ', y: 'ẏ', z: 'ż' };
+const DOT = { x: 'ẋ', y: 'ẏ', z: 'ż', r: 'ṙ', i: 'i̇', j: 'j̇', k: 'k̇' };
 
 /* ─────────────────────────────────────────────────────────────────────────────
    1. Built-in Dynamical Systems
@@ -1224,6 +1224,59 @@ const SYS = {
     x0: [0.63, 0.47, -0.54], dt: 0.005, h: 0.005, view: [0.78, -0.52, 1]
   },
 
+  /* Neural Dynamics */
+  hopfield: {
+    group: 'Neural dynamics', name: 'Hopfield network', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('w21', 'w₂₁', 1.5, 2.5, 0.0005, 1.9995), P('w33', 'w₃₃', 0.7, 1.5, 0.01, 1.1)],
+    rhs: ['−x + 2 tanh(x) − 1.2 tanh(y)', '−y + w₂₁ tanh(x) + 1.71 tanh(y) + 1.15 tanh(z)', '−z − 4.75 tanh(x) + w₃₃ tanh(z)'],
+    f: (x, y, z, t, p, o) => {
+      const tx = Math.tanh(x), ty = Math.tanh(y), tz = Math.tanh(z);
+      o[0] = -x + 2 * tx - 1.2 * ty;
+      o[1] = -y + p.w21 * tx + 1.71 * ty + 1.15 * tz;
+      o[2] = -z - 4.75 * tx + p.w33 * tz;
+    },
+    x0: [0.1, 0.1, 0.1], dt: 0.01, h: 0.01, view: [0.65, -0.45, 1]
+  },
+  fHopfield: {
+    group: 'Neural dynamics', name: 'Fractional Hopfield (q = 0.95)', base: 'hopfield', q: 0.95
+  },
+  qvnn: {
+    group: 'Neural dynamics', name: 'QVNN projection (4D → 3D)', kind: 'ode', dim: 4, vars: ['r', 'i', 'j', 'k'],
+    params: [
+      { k: 'drop', label: 'Drop', type: 'select', v: 'r', options: [
+        { value: 'r', label: 'Drop r → (i, j, k)' },
+        { value: 'i', label: 'Drop i → (r, j, k)' },
+        { value: 'j', label: 'Drop j → (r, i, k)' },
+        { value: 'k', label: 'Drop k → (r, i, j)' }
+      ]},
+      P('w_r', 'w_r', 1.0, 3.5, 0.05, 2.2),
+      P('w_i', 'w_i', 1.5, 4.5, 0.05, 3.1),
+      P('w_j', 'w_j', 0.2, 2.0, 0.05, 1.0),
+      P('w_k', 'w_k', -3.2, -1.0, 0.05, -2.1)
+    ],
+    rhs: [
+      '−r + (W·tanh(q))_r + 1.1',
+      '−i + (W·tanh(q))_i + 1.3',
+      '−j + (W·tanh(q))_j − 1.7',
+      '−k + (W·tanh(q))_k + 0.55'
+    ],
+    f4: (r, i, j, k, t, p, o) => {
+      const tr = Math.tanh(r), ti = Math.tanh(i), tj = Math.tanh(j), tk = Math.tanh(k);
+      const wr = p.w_r, wi = p.w_i, wj = p.w_j, wk = p.w_k;
+      o[0] = -r + (wr * tr - wi * ti - wj * tj - wk * tk) + 1.1;
+      o[1] = -i + (wr * ti + wi * tr + wj * tk - wk * tj) + 1.3;
+      o[2] = -j + (wr * tj - wi * tk + wj * tr + wk * ti) - 1.7;
+      o[3] = -k + (wr * tk + wi * tj - wj * ti + wk * tr) + 0.55;
+    },
+    f: (x, y, z, t, p, o) => {
+      const tx = Math.tanh(x), ty = Math.tanh(y), tz = Math.tanh(z);
+      o[0] = -x + p.w_r * tx - p.w_i * ty + 1.1;
+      o[1] = -y + p.w_r * ty + p.w_i * tx + 1.3;
+      o[2] = -z + p.w_j * tz + p.w_k * tx - 1.7;
+    },
+    x0: [0.1, -0.1, 0.2, 0.05], dt: 0.01, h: 0.01, view: [0.75, -0.55, 1]
+  },
+
   /* Fractional Presets */
   fLorenz:  { group: 'Fractional-order', name: 'Fractional Lorenz (q = 0.995)', base: 'lorenz', q: 0.995 },
   fChen:    { group: 'Fractional-order', name: 'Fractional Chen (q = 0.9)', base: 'chen', q: 0.9 },
@@ -1276,7 +1329,7 @@ const SYS = {
   }
 };
 
-const GROUPS = ['Strange attractors', 'Strange attractors II', 'Fractional-order', 'Iterated maps', 'Forced oscillators', 'Phase portraits', 'Custom models'];
+const GROUPS = ['Strange attractors', 'Strange attractors II', 'Neural dynamics', 'Fractional-order', 'Iterated maps', 'Forced oscillators', 'Phase portraits', 'Custom models'];
 
 const PALETTES = {
   nebula:    { name: 'Nebula',       stops: ['#06061a', '#241a63', '#6d2aa0', '#d4508f', '#ffc49b', '#fff8ee'] },
@@ -1822,7 +1875,7 @@ function resolve(key) {
   return { key, name: s.name, def: s, q: 1, over: {}, view: s.view || [0, 0, 1] };
 }
 
-const is3d = () => cur.def.kind === 'ode' && cur.def.vars.length === 3;
+const is3d = () => cur.def.kind === 'ode' && (cur.def.vars.length === 3 || cur.def.dim === 4);
 const fracActive = () => cur.def.kind === 'ode' && cur.def.frac && state.q < 0.9995;
 function solverKind() {
   const k = cur.def.kind;
@@ -2302,8 +2355,53 @@ function makeYield(id) {
 
 async function runRK4(d, p, n, yf, optStart) {
   const pts = new Float32Array(n * 3);
-  const f = d.f;
   const dt = d.dt, h2 = dt / 2, h6 = dt / 6;
+
+  if (d.dim === 4 || d.f4) {
+    const f4 = d.f4 || d.f;
+    const a = new Float64Array(4), b = new Float64Array(4), c = new Float64Array(4), e = new Float64Array(4);
+    let s0 = (optStart && Number.isFinite(optStart[0])) ? optStart[0] : d.x0[0];
+    let s1 = (optStart && Number.isFinite(optStart[1])) ? optStart[1] : d.x0[1];
+    let s2 = (optStart && Number.isFinite(optStart[2])) ? optStart[2] : d.x0[2];
+    let s3 = (optStart && Number.isFinite(optStart[3])) ? optStart[3] : (d.x0[3] || 0);
+    let t = 0;
+    let m = n, warn = '';
+
+    const drop = (p && p.drop) || 'r';
+    let idx0 = 1, idx1 = 2, idx2 = 3;
+    if (drop === 'i') { idx0 = 0; idx1 = 2; idx2 = 3; }
+    else if (drop === 'j') { idx0 = 0; idx1 = 1; idx2 = 3; }
+    else if (drop === 'k') { idx0 = 0; idx1 = 1; idx2 = 2; }
+
+    for (let i = 0; i < n; i++) {
+      f4(s0, s1, s2, s3, t, p, a);
+      f4(s0 + h2 * a[0], s1 + h2 * a[1], s2 + h2 * a[2], s3 + h2 * a[3], t + h2, p, b);
+      f4(s0 + h2 * b[0], s1 + h2 * b[1], s2 + h2 * b[2], s3 + h2 * b[3], t + h2, p, c);
+      f4(s0 + dt * c[0], s1 + dt * c[1], s2 + dt * c[2], s3 + dt * c[3], t + dt, p, e);
+
+      s0 += h6 * (a[0] + 2 * b[0] + 2 * c[0] + e[0]);
+      s1 += h6 * (a[1] + 2 * b[1] + 2 * c[1] + e[1]);
+      s2 += h6 * (a[2] + 2 * b[2] + 2 * c[2] + e[2]);
+      s3 += h6 * (a[3] + 2 * b[3] + 2 * c[3] + e[3]);
+      t += dt;
+
+      if (!(Math.abs(s0) + Math.abs(s1) + Math.abs(s2) + Math.abs(s3) < 1e6)) {
+        m = i;
+        warn = `The trajectory escaped to infinity after ${fmtInt(i)} steps. Try other constants.`;
+        break;
+      }
+
+      const st = [s0, s1, s2, s3];
+      const k = i * 3;
+      pts[k] = st[idx0]; pts[k + 1] = st[idx1]; pts[k + 2] = st[idx2];
+
+      if ((i & 8191) === 0) await yf(i / n);
+    }
+
+    return { pts, n: m, start: Math.floor(m * 0.01), warn, info: `RK4 4D → 3D (drop ${drop}) · Δt = ${d.dt} · ${fmtInt(n)} steps` };
+  }
+
+  const f = d.f;
   const a = new Float64Array(3), b = new Float64Array(3), c = new Float64Array(3), e = new Float64Array(3);
   let x = (optStart && Number.isFinite(optStart[0])) ? optStart[0] : d.x0[0];
   let y = (optStart && Number.isFinite(optStart[1])) ? optStart[1] : d.x0[1];
@@ -2510,7 +2608,7 @@ function scheduleRecompute() {
    ───────────────────────────────────────────────────────────────────────────── */
 function captionData() {
   const d = cur.def;
-  const meta = d.params.map(pp => `${pp.label} = ${fmt(state.p[pp.k], pp.step)}`).join('  ·  ') +
+  const meta = d.params.map(pp => pp.options ? `${pp.label} = ${state.p[pp.k]}` : `${pp.label} = ${fmt(state.p[pp.k], pp.step)}`).join('  ·  ') +
                (fracActive() ? `  ·  q = ${state.q.toFixed(3)}` : '');
   return {
     title: state.title.trim() || cur.name,
@@ -3187,6 +3285,21 @@ function initLiveSim() {
     sim.glHead = 0;
   }
 
+  if (d.dim === 4 || d.f4) {
+    sim.is4D = true;
+    sim.s0 = (startPt && Number.isFinite(startPt[0])) ? startPt[0] : d.x0[0];
+    sim.s1 = (startPt && Number.isFinite(startPt[1])) ? startPt[1] : d.x0[1];
+    sim.s2 = (startPt && Number.isFinite(startPt[2])) ? startPt[2] : d.x0[2];
+    sim.s3 = (startPt && Number.isFinite(startPt[3])) ? startPt[3] : (d.x0[3] || 0);
+    const drop = (state.p && state.p.drop) || 'r';
+    let idx0 = 1, idx1 = 2, idx2 = 3;
+    if (drop === 'i') { idx0 = 0; idx1 = 2; idx2 = 3; }
+    else if (drop === 'j') { idx0 = 0; idx1 = 1; idx2 = 3; }
+    else if (drop === 'k') { idx0 = 0; idx1 = 1; idx2 = 2; }
+    const st = [sim.s0, sim.s1, sim.s2, sim.s3];
+    sim.x = st[idx0]; sim.y = st[idx1]; sim.z = st[idx2];
+  }
+
   sim.tailBuffer[0] = sim.x;
   sim.tailBuffer[1] = sim.y;
   sim.tailBuffer[2] = sim.z;
@@ -3260,6 +3373,43 @@ function stepLiveSim(sim, steps) {
       buf[idx * 3] = nx;
       buf[idx * 3 + 1] = ny;
       buf[idx * 3 + 2] = nz;
+      sim.tailHead = (idx + 1) % tailCap;
+      if (sim.tailLen < tailCap) sim.tailLen++;
+    }
+  } else if (sim.is4D) {
+    const dt = d.dt, h2 = dt / 2, h6 = dt / 6, f4 = d.f4 || d.f;
+    const a = [0, 0, 0, 0], b = [0, 0, 0, 0], c = [0, 0, 0, 0], e = [0, 0, 0, 0];
+    const drop = (p && p.drop) || 'r';
+    let idx0 = 1, idx1 = 2, idx2 = 3;
+    if (drop === 'i') { idx0 = 0; idx1 = 2; idx2 = 3; }
+    else if (drop === 'j') { idx0 = 0; idx1 = 1; idx2 = 3; }
+    else if (drop === 'k') { idx0 = 0; idx1 = 1; idx2 = 2; }
+
+    for (let s = 0; s < steps; s++) {
+      f4(sim.s0, sim.s1, sim.s2, sim.s3, sim.t, p, a);
+      f4(sim.s0 + h2 * a[0], sim.s1 + h2 * a[1], sim.s2 + h2 * a[2], sim.s3 + h2 * a[3], sim.t + h2, p, b);
+      f4(sim.s0 + h2 * b[0], sim.s1 + h2 * b[1], sim.s2 + h2 * b[2], sim.s3 + h2 * b[3], sim.t + h2, p, c);
+      f4(sim.s0 + dt * c[0], sim.s1 + dt * c[1], sim.s2 + dt * c[2], sim.s3 + dt * c[3], sim.t + dt, p, e);
+
+      sim.s0 += h6 * (a[0] + 2 * b[0] + 2 * c[0] + e[0]);
+      sim.s1 += h6 * (a[1] + 2 * b[1] + 2 * c[1] + e[1]);
+      sim.s2 += h6 * (a[2] + 2 * b[2] + 2 * c[2] + e[2]);
+      sim.s3 += h6 * (a[3] + 2 * b[3] + 2 * c[3] + e[3]);
+      sim.t += dt;
+      sim.stepCount++;
+
+      if (!(Math.abs(sim.s0) + Math.abs(sim.s1) + Math.abs(sim.s2) + Math.abs(sim.s3) < 1e6)) {
+        sim.diverged = true;
+        break;
+      }
+
+      const st = [sim.s0, sim.s1, sim.s2, sim.s3];
+      sim.x = st[idx0]; sim.y = st[idx1]; sim.z = st[idx2];
+
+      const idx = sim.tailHead;
+      buf[idx * 3] = sim.x;
+      buf[idx * 3 + 1] = sim.y;
+      buf[idx * 3 + 2] = sim.z;
       sim.tailHead = (idx + 1) % tailCap;
       if (sim.tailLen < tailCap) sim.tailLen++;
     }
@@ -4805,6 +4955,12 @@ function buildParams() {
   const d = cur.def, wrap = $('params');
   wrap.innerHTML = d.params.map(pp => {
     const id = 'p_' + pp.k;
+    if (pp.options) {
+      const curVal = state.p[pp.k] ?? pp.v;
+      const opts = pp.options.map(opt => `<option value="${opt.value}" ${curVal === opt.value ? 'selected' : ''}>${esc(opt.label)}</option>`).join('');
+      return `<div class="ctl"><div class="ctl-head"><label for="${id}">${esc(pp.label)}</label></div>` +
+             `<select id="${id}">${opts}</select></div>`;
+    }
     return `<div class="ctl"><div class="ctl-head"><label for="${id}">${esc(pp.label)}</label><output id="${id}o" for="${id}">${fmt(state.p[pp.k], pp.step)}</output></div>` +
            `<input type="range" id="${id}" min="${pp.min}" max="${pp.max}" step="${pp.step}" value="${state.p[pp.k]}"></div>`;
   }).join('');
@@ -4812,13 +4968,23 @@ function buildParams() {
   for (const pp of d.params) {
     const el = $('p_' + pp.k);
     if (!el) continue;
-    el.addEventListener('input', () => {
-      state.p[pp.k] = +el.value;
-      $('p_' + pp.k + 'o').textContent = fmt(state.p[pp.k], pp.step);
-      updateEq();
-      scheduleRecompute();
-      save();
-    });
+    if (pp.options) {
+      el.addEventListener('change', () => {
+        state.p[pp.k] = el.value;
+        updateEq();
+        scheduleRecompute();
+        save();
+      });
+    } else {
+      el.addEventListener('input', () => {
+        state.p[pp.k] = +el.value;
+        const out = $('p_' + pp.k + 'o');
+        if (out) out.textContent = fmt(state.p[pp.k], pp.step);
+        updateEq();
+        scheduleRecompute();
+        save();
+      });
+    }
   }
 }
 
@@ -5052,7 +5218,7 @@ function setSystem(key, saved) {
   state.p = {};
   for (const pp of d.params) {
     const sv = saved && saved.p ? saved.p[pp.k] : undefined;
-    state.p[pp.k] = Number.isFinite(sv) ? sv : (cur.over[pp.k] ?? pp.v);
+    state.p[pp.k] = (sv !== undefined) ? sv : (cur.over[pp.k] ?? pp.v);
   }
 
   if (saved) {
@@ -5970,6 +6136,112 @@ function runUnitTests() {
     }
   } catch (err) {
     assert('Strange attractors II tests', false, err.message);
+  }
+
+  log.push('\n=== 24. Neural Dynamics & QVNN 4D Projection Invariants ===');
+  try {
+    // 1. Chaotic Hopfield
+    const hopDef = SYS.hopfield;
+    assert('SYS.hopfield is defined in Neural dynamics', !!hopDef && hopDef.group === 'Neural dynamics');
+    assert('SYS.hopfield is fractional-capable with w21 and w33 sliders', hopDef.frac === true && hopDef.params.some(p => p.k === 'w21') && hopDef.params.some(p => p.k === 'w33'));
+
+    const hPts = new Float32Array(40000 * 3);
+    const hp = { w21: 1.9995, w33: 1.1 }, hdt = hopDef.dt, hh2 = hdt / 2, hh6 = hdt / 6;
+    let hx = hopDef.x0[0], hy = hopDef.x0[1], hz = hopDef.x0[2];
+    const ha = [0,0,0], hb = [0,0,0], hc = [0,0,0], he = [0,0,0];
+    for (let i = 0; i < 40000; i++) {
+      hopDef.f(hx, hy, hz, 0, hp, ha);
+      hopDef.f(hx + hh2 * ha[0], hy + hh2 * ha[1], hz + hh2 * ha[2], hh2, hp, hb);
+      hopDef.f(hx + hh2 * hb[0], hy + hh2 * hb[1], hz + hh2 * hb[2], hh2, hp, hc);
+      hopDef.f(hx + hdt * hc[0], hy + hdt * hc[1], hz + hdt * hc[2], hdt, hp, he);
+      hx += hh6 * (ha[0] + 2*hb[0] + 2*hc[0] + he[0]);
+      hy += hh6 * (ha[1] + 2*hb[1] + 2*hc[1] + he[1]);
+      hz += hh6 * (ha[2] + 2*hb[2] + 2*hc[2] + he[2]);
+      hPts[i * 3] = hx; hPts[i * 3 + 1] = hy; hPts[i * 3 + 2] = hz;
+    }
+    const savedC2 = cache, savedCur2 = cur;
+    cache = { pts: hPts, n: 40000, start: 500, kind: 'rk4', info: 'hopfield' };
+    cur = { id: 'hopfield', def: hopDef, name: hopDef.name, view: hopDef.view, over: {} };
+    const hView = buildView(200, 200, { caption: false });
+    let hLit = 0;
+    const dummyCtx = {
+      fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+      createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: (img) => {
+        const bgR = img.data[0], bgG = img.data[1], bgB = img.data[2];
+        for (let pi = 0; pi < img.data.length; pi += 4) {
+          if (img.data[pi] !== bgR || img.data[pi+1] !== bgG || img.data[pi+2] !== bgB) hLit++;
+        }
+      },
+      drawImage: () => {}, save: () => {}, restore: () => {}
+    };
+    renderArt(dummyCtx, 200, 200, { caption: false, fast: false });
+    const hCov = (hLit / (hView.box.w * hView.box.h)) * 100;
+    assert(`SYS.hopfield rendered density coverage > 15% (actual: ${hCov.toFixed(1)}%)`, hCov > 15);
+
+    // 2. Fractional Hopfield
+    const fHop = SYS.fHopfield;
+    assert('SYS.fHopfield is defined in Neural dynamics', !!fHop && fHop.group === 'Neural dynamics');
+    assert('SYS.fHopfield has base hopfield with q=0.95', fHop.base === 'hopfield' && fHop.q === 0.95);
+    const resolvedFHop = resolve('fHopfield');
+    assert('resolve(fHopfield) correctly resolves base hopfield definition', resolvedFHop && resolvedFHop.def === hopDef && resolvedFHop.q === 0.95);
+
+    // 3. Quaternion-Valued Neural Network (QVNN)
+    const qvnnDef = SYS.qvnn;
+    assert('SYS.qvnn is defined in Neural dynamics', !!qvnnDef && qvnnDef.group === 'Neural dynamics');
+    assert('SYS.qvnn has 4D state (dim=4, vars=[r,i,j,k])', qvnnDef.dim === 4 && qvnnDef.vars.length === 4);
+    assert('SYS.qvnn has drop projection dropdown parameter', qvnnDef.params.some(p => p.k === 'drop' && p.type === 'select'));
+
+    // Test all 4 projections
+    for (const dropVal of ['r', 'i', 'j', 'k']) {
+      const qp = { drop: dropVal, w_r: 2.2, w_i: 3.1, w_j: 1.0, w_k: -2.1 };
+      const qdt = qvnnDef.dt, qh2 = qdt / 2, qh6 = qdt / 6;
+      let s0 = qvnnDef.x0[0], s1 = qvnnDef.x0[1], s2 = qvnnDef.x0[2], s3 = qvnnDef.x0[3];
+      const qa = [0,0,0,0], qb = [0,0,0,0], qc = [0,0,0,0], qe = [0,0,0,0];
+      const qnPts = 15000;
+      const qpts = new Float32Array(qnPts * 3);
+      let idx0 = 1, idx1 = 2, idx2 = 3;
+      if (dropVal === 'i') { idx0 = 0; idx1 = 2; idx2 = 3; }
+      else if (dropVal === 'j') { idx0 = 0; idx1 = 1; idx2 = 3; }
+      else if (dropVal === 'k') { idx0 = 0; idx1 = 1; idx2 = 2; }
+      for (let i = 0; i < qnPts; i++) {
+        qvnnDef.f4(s0, s1, s2, s3, 0, qp, qa);
+        qvnnDef.f4(s0 + qh2 * qa[0], s1 + qh2 * qa[1], s2 + qh2 * qa[2], s3 + qh2 * qa[3], qh2, qp, qb);
+        qvnnDef.f4(s0 + qh2 * qb[0], s1 + qh2 * qb[1], s2 + qh2 * qb[2], s3 + qh2 * qb[3], qh2, qp, qc);
+        qvnnDef.f4(s0 + qdt * qc[0], s1 + qdt * qc[1], s2 + qdt * qc[2], s3 + qdt * qc[3], qdt, qp, qe);
+        s0 += qh6 * (qa[0] + 2*qb[0] + 2*qc[0] + qe[0]);
+        s1 += qh6 * (qa[1] + 2*qb[1] + 2*qc[1] + qe[1]);
+        s2 += qh6 * (qa[2] + 2*qb[2] + 2*qc[2] + qe[2]);
+        s3 += qh6 * (qa[3] + 2*qb[3] + 2*qc[3] + qe[3]);
+        const st = [s0, s1, s2, s3];
+        qpts[i * 3] = st[idx0]; qpts[i * 3 + 1] = st[idx1]; qpts[i * 3 + 2] = st[idx2];
+      }
+      assert(`QVNN 4D integration produces 3D pts with drop=${dropVal}`, qpts.length === qnPts * 3 && Number.isFinite(qpts[100]));
+
+      cache = { pts: qpts, n: qnPts, start: 500, kind: 'rk4', info: 'qvnn' };
+      cur = { id: 'qvnn', def: qvnnDef, name: qvnnDef.name, view: qvnnDef.view, over: qp };
+      const qView = buildView(200, 200, { caption: false });
+      let qLit = 0;
+      const qCtx = {
+        fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+        createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+        putImageData: (img) => {
+          const bgR = img.data[0], bgG = img.data[1], bgB = img.data[2];
+          for (let pi = 0; pi < img.data.length; pi += 4) {
+            if (img.data[pi] !== bgR || img.data[pi+1] !== bgG || img.data[pi+2] !== bgB) qLit++;
+          }
+        },
+        drawImage: () => {}, save: () => {}, restore: () => {}
+      };
+      renderArt(qCtx, 200, 200, { caption: false, fast: false });
+      const qCov = (qLit / (qView.box.w * qView.box.h)) * 100;
+      assert(`QVNN projection drop=${dropVal} coverage > 15% (actual: ${qCov.toFixed(1)}%)`, qCov > 15);
+    }
+
+    cache = savedC2;
+    cur = savedCur2;
+  } catch (err) {
+    assert('Neural dynamics tests', false, err.message);
   }
 
   log.push(`\n========================================`);

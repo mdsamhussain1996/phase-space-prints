@@ -95,7 +95,7 @@ const context = vm.createContext(sandbox);
 // Expose runUnitTests and helpers
 const modifiedScript = scriptText.replace(
   'init();',
-  'globalThis.runUnitTests = runUnitTests; globalThis.getEquilibria = getEquilibria; globalThis.SYS = SYS; globalThis.initLiveSim = initLiveSim; globalThis.stepLiveSim = stepLiveSim; globalThis.computeJacobian3D = computeJacobian3D; globalThis.classifyJacobian3D = classifyJacobian3D; globalThis.buildArcLengthTable = buildArcLengthTable; globalThis.getArcLengthIndex = getArcLengthIndex; globalThis.tickLiveMode = tickLiveMode; globalThis.serializeLiveUrl = serializeLiveUrl; globalThis.parseUrlParams = parseUrlParams; globalThis.state = state; init();'
+  'globalThis.runUnitTests = runUnitTests; globalThis.getEquilibria = getEquilibria; globalThis.SYS = SYS; globalThis.GROUPS = GROUPS; globalThis.initLiveSim = initLiveSim; globalThis.stepLiveSim = stepLiveSim; globalThis.computeJacobian3D = computeJacobian3D; globalThis.classifyJacobian3D = classifyJacobian3D; globalThis.buildArcLengthTable = buildArcLengthTable; globalThis.getArcLengthIndex = getArcLengthIndex; globalThis.tickLiveMode = tickLiveMode; globalThis.serializeLiveUrl = serializeLiveUrl; globalThis.parseUrlParams = parseUrlParams; globalThis.state = state; init();'
 );
 vm.runInContext(modifiedScript, context);
 
@@ -180,6 +180,18 @@ vm.runInContext(`
   if (SYS.vdp.dom[0] < -3.5 || SYS.vdp.dom[1] > 3.5) throw new Error('SYS.vdp domain out of expected range');
   if (Math.abs(SYS.pendulum.dom[1] / SYS.pendulum.dom[3]) > 2.5) throw new Error('SYS.pendulum domain aspect ratio unbalanced');
   console.log('✅ PASS: Direct Phase 1 flow domains verified');
+
+  // 9. Phase 2: Strange attractors II definitions & chaos invariants
+  if (!GROUPS.includes('Strange attractors II')) throw new Error('GROUPS must contain Strange attractors II');
+  const p2Keys = ['lu', 'chua', 'rucklidge', 'burkeShaw', 'tsucs', 'rabFab', 'sprott2014'];
+  for (const k of p2Keys) {
+    const s = SYS[k];
+    if (!s) throw new Error('Missing preset: ' + k);
+    if (s.group !== 'Strange attractors II') throw new Error(k + ' must be in Strange attractors II');
+    if (s.kind !== 'ode' || !s.frac || s.vars.length !== 3) throw new Error(k + ' must be fractional-capable 3D ODE');
+    if (!s.rhs || s.rhs.length !== 3) throw new Error(k + ' must have 3 Unicode rhs expressions');
+  }
+  console.log('✅ PASS: Direct Phase 2 Strange attractors II definitions verified');
 `, context);
 
 console.log('\n✨ ALL TESTS PASSED SUCCESSFULLY! ✨');

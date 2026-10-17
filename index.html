@@ -1132,6 +1132,98 @@ const SYS = {
     x0: [-0.1, 0.5, -0.6], dt: 0.002, h: 0.005, view: [0, 0, 1]
   },
 
+  /* Strange attractors II */
+  lu: {
+    group: 'Strange attractors II', name: 'Lü–Chen', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('a', 'a', 20, 50, 0.1, 36), P('b', 'b', 1.8, 4.2, 0.01, 3), P('c', 'c', 12, 28, 0.1, 20)],
+    rhs: ['a(y − x)', '−xz + cy', 'xy − bz'],
+    f: (x, y, z, t, p, o) => {
+      o[0] = p.a * (y - x);
+      o[1] = -x * z + p.c * y;
+      o[2] = x * y - p.b * z;
+    },
+    x0: [0.1, 0.3, -0.6], dt: 0.002, h: 0.002, view: [0.65, -0.55, 1]
+  },
+  chua: {
+    group: 'Strange attractors II', name: 'Chua circuit', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [
+      P('alpha', 'α', 10, 22, 0.1, 15.6),
+      P('beta', 'β', 18, 38, 0.1, 28),
+      P('m0', 'm₀', -1.6, -0.7, 0.005, -1.143),
+      P('m1', 'm₁', -1.0, -0.4, 0.005, -0.714)
+    ],
+    rhs: ['α(y − x − h(x))', 'x − y + z', '−βy'],
+    f: (x, y, z, t, p, o) => {
+      const h = p.m1 * x + 0.5 * (p.m0 - p.m1) * (Math.abs(x + 1) - Math.abs(x - 1));
+      o[0] = p.alpha * (y - x - h);
+      o[1] = x - y + z;
+      o[2] = -p.beta * y;
+    },
+    x0: [0.7, 0, 0], dt: 0.005, h: 0.005, view: [0.85, -0.4, 1]
+  },
+  rucklidge: {
+    group: 'Strange attractors II', name: 'Rucklidge', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('k', 'k', 1.2, 2.8, 0.01, 2), P('alpha', 'α', 4.0, 9.4, 0.05, 6.7)],
+    rhs: ['−kx + αy − yz', 'x', '−z + y²'],
+    f: (x, y, z, t, p, o) => {
+      o[0] = -p.k * x + p.alpha * y - y * z;
+      o[1] = x;
+      o[2] = -z + y * y;
+    },
+    x0: [1, 0, 4.5], dt: 0.005, h: 0.005, view: [0.4, -0.7, 1]
+  },
+  burkeShaw: {
+    group: 'Strange attractors II', name: 'Burke–Shaw', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('s', 's', 6, 14, 0.1, 10), P('v', 'v', 2.5, 6.0, 0.005, 4.272)],
+    rhs: ['−s(x + y)', '−y − sxz', 'sxy + v'],
+    f: (x, y, z, t, p, o) => {
+      o[0] = -p.s * (x + y);
+      o[1] = -y - p.s * x * z;
+      o[2] = p.s * x * y + p.v;
+    },
+    x0: [0.6, 0, 0], dt: 0.002, h: 0.002, view: [1.1, -0.3, 1]
+  },
+  tsucs: {
+    group: 'Strange attractors II', name: 'Three-scroll (TSUCS)', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [
+      P('a', 'a', 24, 56, 0.2, 40),
+      P('b', 'b', 33, 77, 0.2, 55),
+      P('c', 'c', 1.1, 2.6, 0.005, 1.833),
+      P('d', 'd', 0.10, 0.22, 0.002, 0.16),
+      P('e', 'e', 0.39, 0.91, 0.005, 0.65),
+      P('f', 'f', 12, 28, 0.1, 20)
+    ],
+    rhs: ['a(y − x) + dxz', 'bx − xz + fy', 'cz + xy − ex²'],
+    f: (x, y, z, t, p, o) => {
+      o[0] = p.a * (y - x) + p.d * x * z;
+      o[1] = p.b * x - x * z + p.f * y;
+      o[2] = p.c * z + x * y - p.e * x * x;
+    },
+    x0: [0.1, 1, 0.1], dt: 0.0005, h: 0.0002, view: [0.78, -0.52, 1]
+  },
+  rabFab: {
+    group: 'Strange attractors II', name: 'Rabinovich–Fabrikant', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('alpha', 'α', 0.08, 0.20, 0.002, 0.14), P('gamma', 'γ', 0.06, 0.14, 0.002, 0.10)],
+    rhs: ['y(z − 1 + x²) + γx', 'x(3z + 1 − x²) + γy', '−2z(α + xy)'],
+    f: (x, y, z, t, p, o) => {
+      o[0] = y * (z - 1 + x * x) + p.gamma * x;
+      o[1] = x * (3 * z + 1 - x * x) + p.gamma * y;
+      o[2] = -2 * z * (p.alpha + x * y);
+    },
+    x0: [-1, 0, 0.5], dt: 0.002, h: 0.002, view: [0.4, -0.7, 1]
+  },
+  sprott2014: {
+    group: 'Strange attractors II', name: 'Sprott (2014)', kind: 'ode', frac: true, vars: ['x', 'y', 'z'],
+    params: [P('a', 'a', 1.2, 2.9, 0.01, 2.07), P('b', 'b', 1.0, 2.5, 0.01, 1.79)],
+    rhs: ['y + axy + xz', '1 − bx² + yz', 'x − x² − y²'],
+    f: (x, y, z, t, p, o) => {
+      o[0] = y + p.a * x * y + x * z;
+      o[1] = 1 - p.b * x * x + y * z;
+      o[2] = x - x * x - y * y;
+    },
+    x0: [0.63, 0.47, -0.54], dt: 0.005, h: 0.005, view: [0.78, -0.52, 1]
+  },
+
   /* Fractional Presets */
   fLorenz:  { group: 'Fractional-order', name: 'Fractional Lorenz (q = 0.995)', base: 'lorenz', q: 0.995 },
   fChen:    { group: 'Fractional-order', name: 'Fractional Chen (q = 0.9)', base: 'chen', q: 0.9 },
@@ -1184,7 +1276,7 @@ const SYS = {
   }
 };
 
-const GROUPS = ['Strange attractors', 'Fractional-order', 'Iterated maps', 'Forced oscillators', 'Phase portraits', 'Custom models'];
+const GROUPS = ['Strange attractors', 'Strange attractors II', 'Fractional-order', 'Iterated maps', 'Forced oscillators', 'Phase portraits', 'Custom models'];
 
 const PALETTES = {
   nebula:    { name: 'Nebula',       stops: ['#06061a', '#241a63', '#6d2aa0', '#d4508f', '#ffc49b', '#fff8ee'] },
@@ -4701,7 +4793,7 @@ function buildSelect() {
         og.appendChild(o);
       }
     }
-    sel.appendChild(og);
+    if (og.children.length > 0) sel.appendChild(og);
   }
   sel.addEventListener('change', () => {
     setSystem(sel.value, null);
@@ -5819,6 +5911,65 @@ function runUnitTests() {
     cur = savedCurH;
   } catch (e) {
     assert('Halvorsen coverage & auto-framing invariants', false, e.message);
+  }
+
+  log.push('\n=== 23. Strange Attractors II Chaos & Coverage Invariants ===');
+  try {
+    const p2Keys = ['lu', 'chua', 'rucklidge', 'burkeShaw', 'tsucs', 'rabFab', 'sprott2014'];
+    for (const key of p2Keys) {
+      const def = SYS[key];
+      assert(`SYS.${key} is defined in Strange attractors II group`, !!def && def.group === 'Strange attractors II');
+      assert(`SYS.${key} is fractional-capable ODE with 3 vars`, def.kind === 'ode' && def.frac === true && def.vars.length === 3);
+      assert(`SYS.${key} has Unicode RHS and tuned 3/4 view`, def.rhs.length === 3 && def.view.length === 3);
+
+      // Verify RK4 integration and plate coverage > 15%
+      const dt = def.dt, h2 = dt / 2, h6 = dt / 6;
+      const p = {};
+      for (const pp of def.params) p[pp.k] = pp.v;
+      let x = def.x0[0], y = def.x0[1], z = def.x0[2];
+      const a = [0,0,0], b = [0,0,0], c = [0,0,0], e = [0,0,0];
+      const nPts = 30000;
+      const pts = new Float32Array(nPts * 3);
+      let isFinite = true;
+      for (let i = 0; i < nPts; i++) {
+        def.f(x, y, z, 0, p, a);
+        def.f(x + h2 * a[0], y + h2 * a[1], z + h2 * a[2], h2, p, b);
+        def.f(x + h2 * b[0], y + h2 * b[1], z + h2 * b[2], h2, p, c);
+        def.f(x + dt * c[0], y + dt * c[1], z + dt * c[2], dt, p, e);
+        x += h6 * (a[0] + 2*b[0] + 2*c[0] + e[0]);
+        y += h6 * (a[1] + 2*b[1] + 2*c[1] + e[1]);
+        z += h6 * (a[2] + 2*b[2] + 2*c[2] + e[2]);
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+          isFinite = false; break;
+        }
+        pts[i * 3] = x; pts[i * 3 + 1] = y; pts[i * 3 + 2] = z;
+      }
+      assert(`SYS.${key} trajectory remains finite over ${nPts} steps`, isFinite);
+
+      const savedC = cache, savedCur = cur;
+      cache = { pts, n: nPts, start: 500, kind: 'rk4', info: key };
+      cur = { id: key, def, name: def.name, view: def.view, over: {} };
+      const v = buildView(200, 200, { caption: false });
+      let lit = 0;
+      const dummyCtx = {
+        fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 10 }),
+        createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+        putImageData: (img) => {
+          const bgR = img.data[0], bgG = img.data[1], bgB = img.data[2];
+          for (let pi = 0; pi < img.data.length; pi += 4) {
+            if (img.data[pi] !== bgR || img.data[pi+1] !== bgG || img.data[pi+2] !== bgB) lit++;
+          }
+        },
+        drawImage: () => {}, save: () => {}, restore: () => {}
+      };
+      renderArt(dummyCtx, 200, 200, { caption: false, fast: false });
+      const cov = (lit / (v.box.w * v.box.h)) * 100;
+      assert(`SYS.${key} rendered density coverage > 15% (actual: ${cov.toFixed(1)}%)`, cov > 15);
+      cache = savedC;
+      cur = savedCur;
+    }
+  } catch (err) {
+    assert('Strange attractors II tests', false, err.message);
   }
 
   log.push(`\n========================================`);
